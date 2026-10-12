@@ -1,8 +1,8 @@
-Quill 1.0.2 — easier chapter deletion.
+Quill 1.0.3 — simpler chapter controls.
 
-- The ⓘ button now opens a chapter-details dialog with a clearly labeled Delete chapter button.
-- Each chapter in the chapter list has a trash button. Deletion asks for confirmation and remains recoverable in Recently deleted.
-- Chapter status and synopsis can be edited in the dialog, with explicit Save details and Cancel controls.
+- Delete chapter is available only in the ⓘ chapter-details menu.
+- Removed chapter-delete buttons from the chapter list and desktop sidebar.
+- Deletion still asks for confirmation and remains recoverable in Recently deleted.
 
 Quill — your story starts here.
 
