@@ -1,4 +1,4 @@
-const CACHE='quill-v2';const FILES=['./','index.html','style.css','app.bundle.js','app.js','core.js','storage.js','export.js','icon.svg','manifest.webmanifest'];
-self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES))));
+const CACHE='quill-v3';const FILES=['./','index.html','style.css','app.bundle.js','app.js','core.js','storage.js','export.js','icon.svg','manifest.webmanifest'];
+self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES.map(file=>new Request(file,{cache:'reload'}))))));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('quill-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||new URL(e.request.url).origin!==location.origin)return;e.respondWith(caches.match(e.request).then(cached=>cached||fetch(e.request)));});
