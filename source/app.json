@@ -1,0 +1,19 @@
+{
+  "name": "Quill",
+  "bundleIdentifier": "com.kharrison.quill",
+  "developerName": "kharrison",
+  "subtitle": "A quiet place for your next novel",
+  "localizedDescription": "Write and organize novels on iPhone and iPad. A focused formatted chapter editor, outline, character and place notes, word goals, spell check, saved revisions, and recoverable trash. Export Word documents, EPUB ebooks, formatted HTML, plain text, or print. Local autosave works offline. Connect a folder in iCloud Drive for optional sync while the app is open. Companion browser app: https://kharrisongit.github.io/Quill/. Desktop Chrome and Edge support shared-folder sync; other browsers can import and export backups. iOS 16 or later. Install with AltStore Classic.",
+  "iconURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.0/quill-icon.png",
+  "tintColor": "705B8B",
+  "category": "productivity",
+  "minOSVersion": "16.0",
+  "appPermissions": {
+    "entitlements": [
+      "application-identifier",
+      "com.apple.developer.team-identifier",
+      "get-task-allow"
+    ],
+    "privacy": {}
+  }
+}

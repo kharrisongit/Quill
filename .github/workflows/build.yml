@@ -1,0 +1,92 @@
+name: Build Quill IPA
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'Sources/**'
+      - 'Resources/**'
+      - 'Tests/**'
+      - 'scripts/**'
+      - 'build.sh'
+      - 'smoke.sh'
+      - 'make-icon.swift'
+      - 'source/app.json'
+      - '.github/workflows/build.yml'
+permissions:
+  contents: write
+concurrency:
+  group: quill-release
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Choose release version
+        id: release
+        run: |
+          PATCH=0
+          while git rev-parse -q --verify "refs/tags/quill-1.0.$PATCH" >/dev/null; do PATCH=$((PATCH+1)); done
+          echo "version=1.0.$PATCH" >> "$GITHUB_OUTPUT"
+      - name: Check revision safety and source publisher
+        run: |
+          node --test Tests/*.test.mjs
+          python3 -m unittest discover -s scripts -p 'test_update_source.py'
+          python3 scripts/bundle.py
+          git diff --exit-code docs/app.bundle.js
+          node --check docs/app.bundle.js
+      - name: Build IPA
+        env:
+          QUILL_VERSION: ${{ steps.release.outputs.version }}
+          QUILL_BUILD: ${{ github.run_number }}
+        run: bash build.sh
+      - name: Launch app in simulator
+        env:
+          QUILL_VERSION: ${{ steps.release.outputs.version }}
+          QUILL_BUILD: ${{ github.run_number }}
+        run: bash smoke.sh
+      - name: Publish Quill and update its AltStore source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          TAG="quill-$VERSION"
+          IPA=build/Quill.ipa
+          gh release create "$TAG" "$IPA" build/quill-icon.png build/quill-screenshot.png \
+            --draft --title "Quill $VERSION" --notes-file RELEASE.md --target "$GITHUB_SHA"
+          gh release edit "$TAG" --draft=false --latest=true
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/Quill.ipa"
+          curl --fail --location --head --retry 5 --retry-all-errors --retry-delay 3 "$URL"
+          SIZE=$(stat -f%z "$IPA")
+          DATE=$(gh release view "$TAG" --json publishedAt --jq .publishedAt)
+          git pull --rebase origin main
+          python3 scripts/update_source.py --file source/apps.json --app-template source/app.json \
+            --version "$VERSION" --download-url "$URL" --size "$SIZE" --date "$DATE" --ipa "$IPA" \
+            --notes-file RELEASE.md --release-title "Quill $VERSION"
+          python3 - "$TAG" <<'PY'
+          import json,pathlib,sys,os
+          p=pathlib.Path('source/apps.json');data=json.loads(p.read_text())
+          app=next(a for a in data['apps'] if a['bundleIdentifier']=='com.kharrison.quill')
+          base=f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/{sys.argv[1]}"
+          app['iconURL']=base+'/quill-icon.png'
+          p.write_text(json.dumps(data,indent=2,ensure_ascii=False)+'\n')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add source/apps.json
+          git commit -m "Publish Quill $VERSION in its AltStore source [skip ci]"
+          git push origin HEAD:main
+      - name: Save diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quill-build
+          path: |
+            build/Quill.ipa
+            build/quill-screenshot.png
+          if-no-files-found: ignore
