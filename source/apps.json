@@ -12,7 +12,7 @@
       "developerName": "kharrison",
       "subtitle": "A quiet place for your next novel",
       "localizedDescription": "Write and organize novels on iPhone and iPad. A focused formatted chapter editor, outline, character and place notes, word goals, spell check, saved revisions, and recoverable trash. Export Word documents, EPUB ebooks, formatted HTML, plain text, or print. Local autosave works offline. Connect a folder in iCloud Drive for optional sync while the app is open. Companion browser app: https://kharrisongit.github.io/Quill/. Desktop Chrome and Edge support shared-folder sync; other browsers can import and export backups. iOS 16 or later. Install with AltStore Classic.",
-      "iconURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.0/quill-icon.png",
+      "iconURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.1/quill-icon.png",
       "tintColor": "705B8B",
       "category": "productivity",
       "minOSVersion": "16.0",
@@ -26,6 +26,15 @@
       },
       "versions": [
         {
+          "version": "1.0.1",
+          "date": "2026-10-12T22:17:51Z",
+          "localizedDescription": "Quill — your story starts here.\n\n- Novel writing for iPhone and iPad, with a matching GitHub Pages browser app.\n- Formatted chapters, outline and reordering, character/place notes, goals, spell check, and focus mode.\n- Local autosave, saved versions, recoverable trash, optional cloud-folder sync, and complete backups.\n- Export Word documents, EPUB ebooks, formatted HTML, plain text, or print/PDF.\n- Includes the latest fixes for chapter details, concurrent form edits, and backup recovery.\n\nDownload Quill.ipa below and open it in AltStore Classic. Requires iOS 16 or later.\n\nWeb app: https://kharrisongit.github.io/Quill/\n\nThis exact IPA passed device compilation, automated checks, and simulator launch/save/reopen tests in build #2. Physical-device AltStore installation and iCloud delivery still need device verification.",
+          "downloadURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.1/Quill.ipa",
+          "size": 153758,
+          "minOSVersion": "16.0",
+          "buildVersion": "2"
+        },
+        {
           "version": "1.0.0",
           "date": "2026-10-12T21:52:48Z",
           "localizedDescription": "Quill — your story starts here.\n\n- A dedicated novel-writing app for iPhone and iPad, with a matching GitHub Pages browser edition.\n- Books, chapter outlines and reordering, formatted prose, scene breaks, focus mode, native/browser spell check, and dark appearance.\n- Character, place, idea, and research notes; chapter synopses and writing status; manuscript and session word goals.\n- Local autosave, immutable saved revisions, parallel-draft review, and recoverable trash.\n- Word (.docx), EPUB, formatted HTML, plain text, print/PDF, and complete JSON backups.\n- Optional shared-folder sync. Choose the same iCloud Drive folder in the iPhone app and desktop Chrome/Edge. Other browsers use backup import/export. Files handles cloud delivery; sync runs while the app is open.\n\niOS 16+. Install Quill.ipa through AltStore Classic. Physical-device installation and iCloud delivery still need verification on your devices.\n\nWeb app: https://kharrisongit.github.io/Quill/\nSource: https://github.com/kharrisongit/Quill",
@@ -35,14 +44,23 @@
           "buildVersion": "1"
         }
       ],
-      "version": "1.0.0",
-      "versionDate": "2026-10-12T21:52:48Z",
-      "versionDescription": "Quill — your story starts here.\n\n- A dedicated novel-writing app for iPhone and iPad, with a matching GitHub Pages browser edition.\n- Books, chapter outlines and reordering, formatted prose, scene breaks, focus mode, native/browser spell check, and dark appearance.\n- Character, place, idea, and research notes; chapter synopses and writing status; manuscript and session word goals.\n- Local autosave, immutable saved revisions, parallel-draft review, and recoverable trash.\n- Word (.docx), EPUB, formatted HTML, plain text, print/PDF, and complete JSON backups.\n- Optional shared-folder sync. Choose the same iCloud Drive folder in the iPhone app and desktop Chrome/Edge. Other browsers use backup import/export. Files handles cloud delivery; sync runs while the app is open.\n\niOS 16+. Install Quill.ipa through AltStore Classic. Physical-device installation and iCloud delivery still need verification on your devices.\n\nWeb app: https://kharrisongit.github.io/Quill/\nSource: https://github.com/kharrisongit/Quill",
-      "downloadURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.0/Quill.ipa",
-      "size": 153390
+      "version": "1.0.1",
+      "versionDate": "2026-10-12T22:17:51Z",
+      "versionDescription": "Quill — your story starts here.\n\n- Novel writing for iPhone and iPad, with a matching GitHub Pages browser app.\n- Formatted chapters, outline and reordering, character/place notes, goals, spell check, and focus mode.\n- Local autosave, saved versions, recoverable trash, optional cloud-folder sync, and complete backups.\n- Export Word documents, EPUB ebooks, formatted HTML, plain text, or print/PDF.\n- Includes the latest fixes for chapter details, concurrent form edits, and backup recovery.\n\nDownload Quill.ipa below and open it in AltStore Classic. Requires iOS 16 or later.\n\nWeb app: https://kharrisongit.github.io/Quill/\n\nThis exact IPA passed device compilation, automated checks, and simulator launch/save/reopen tests in build #2. Physical-device AltStore installation and iCloud delivery still need device verification.",
+      "downloadURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.1/Quill.ipa",
+      "size": 153758
     }
   ],
   "news": [
+    {
+      "title": "Quill 1.0.1",
+      "identifier": "com.kharrison.quill.release-1.0.1",
+      "caption": "Novel writing for iPhone and iPad, with a matching GitHub Pages browser app.",
+      "date": "2026-10-12T22:17:51Z",
+      "tintColor": "705B8B",
+      "appID": "com.kharrison.quill",
+      "url": "https://github.com/kharrisongit/Quill/releases/tag/quill-1.0.1"
+    },
     {
       "title": "Quill 1.0.0",
       "identifier": "com.kharrison.quill.release-1.0.0",
