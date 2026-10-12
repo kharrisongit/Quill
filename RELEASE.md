@@ -1,3 +1,9 @@
+Quill 1.0.2 — easier chapter deletion.
+
+- The ⓘ button now opens a chapter-details dialog with a clearly labeled Delete chapter button.
+- Each chapter in the chapter list has a trash button. Deletion asks for confirmation and remains recoverable in Recently deleted.
+- Chapter status and synopsis can be edited in the dialog, with explicit Save details and Cancel controls.
+
 Quill — your story starts here.
 
 - A dedicated novel-writing app for iPhone and iPad, with a matching GitHub Pages browser edition.
