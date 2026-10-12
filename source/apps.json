@@ -12,7 +12,7 @@
       "developerName": "kharrison",
       "subtitle": "A quiet place for your next novel",
       "localizedDescription": "Write and organize novels on iPhone and iPad. A focused formatted chapter editor, outline, character and place notes, word goals, spell check, saved revisions, and recoverable trash. Export Word documents, EPUB ebooks, formatted HTML, plain text, or print. Local autosave works offline. Connect a folder in iCloud Drive for optional sync while the app is open. Companion browser app: https://kharrisongit.github.io/Quill/. Desktop Chrome and Edge support shared-folder sync; other browsers can import and export backups. iOS 16 or later. Install with AltStore Classic.",
-      "iconURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.2/quill-icon.png",
+      "iconURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.3/quill-icon.png",
       "tintColor": "705B8B",
       "category": "productivity",
       "minOSVersion": "16.0",
@@ -25,6 +25,15 @@
         "privacy": {}
       },
       "versions": [
+        {
+          "version": "1.0.3",
+          "date": "2026-10-12T22:56:24Z",
+          "localizedDescription": "Quill 1.0.3 — simpler chapter controls.\n\n- Delete chapter is available only in the ⓘ chapter-details menu.\n- Removed chapter-delete buttons from the chapter list and desktop sidebar.\n- Deletion still asks for confirmation and remains recoverable in Recently deleted.\n\nQuill — your story starts here.\n\n- A dedicated novel-writing app for iPhone and iPad, with a matching GitHub Pages browser edition.\n- Books, chapter outlines and reordering, formatted prose, scene breaks, focus mode, native/browser spell check, and dark appearance.\n- Character, place, idea, and research notes; chapter synopses and writing status; manuscript and session word goals.\n- Local autosave, immutable saved revisions, parallel-draft review, and recoverable trash.\n- Word (.docx), EPUB, formatted HTML, plain text, print/PDF, and complete JSON backups.\n- Optional shared-folder sync. Choose the same iCloud Drive folder in the iPhone app and desktop Chrome/Edge. Other browsers use backup import/export. Files handles cloud delivery; sync runs while the app is open.\n\niOS 16+. Install Quill.ipa through AltStore Classic. Physical-device installation and iCloud delivery still need verification on your devices.\n\nWeb app: https://kharrisongit.github.io/Quill/\nSource: https://github.com/kharrisongit/Quill",
+          "downloadURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.3/Quill.ipa",
+          "size": 154167,
+          "minOSVersion": "16.0",
+          "buildVersion": "4"
+        },
         {
           "version": "1.0.2",
           "date": "2026-10-12T22:43:42Z",
@@ -53,14 +62,23 @@
           "buildVersion": "1"
         }
       ],
-      "version": "1.0.2",
-      "versionDate": "2026-10-12T22:43:42Z",
-      "versionDescription": "Quill 1.0.2 — easier chapter deletion.\n\n- The ⓘ button now opens a chapter-details dialog with a clearly labeled Delete chapter button.\n- Each chapter in the chapter list has a trash button. Deletion asks for confirmation and remains recoverable in Recently deleted.\n- Chapter status and synopsis can be edited in the dialog, with explicit Save details and Cancel controls.\n\nQuill — your story starts here.\n\n- A dedicated novel-writing app for iPhone and iPad, with a matching GitHub Pages browser edition.\n- Books, chapter outlines and reordering, formatted prose, scene breaks, focus mode, native/browser spell check, and dark appearance.\n- Character, place, idea, and research notes; chapter synopses and writing status; manuscript and session word goals.\n- Local autosave, immutable saved revisions, parallel-draft review, and recoverable trash.\n- Word (.docx), EPUB, formatted HTML, plain text, print/PDF, and complete JSON backups.\n- Optional shared-folder sync. Choose the same iCloud Drive folder in the iPhone app and desktop Chrome/Edge. Other browsers use backup import/export. Files handles cloud delivery; sync runs while the app is open.\n\niOS 16+. Install Quill.ipa through AltStore Classic. Physical-device installation and iCloud delivery still need verification on your devices.\n\nWeb app: https://kharrisongit.github.io/Quill/\nSource: https://github.com/kharrisongit/Quill",
-      "downloadURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.2/Quill.ipa",
-      "size": 154290
+      "version": "1.0.3",
+      "versionDate": "2026-10-12T22:56:24Z",
+      "versionDescription": "Quill 1.0.3 — simpler chapter controls.\n\n- Delete chapter is available only in the ⓘ chapter-details menu.\n- Removed chapter-delete buttons from the chapter list and desktop sidebar.\n- Deletion still asks for confirmation and remains recoverable in Recently deleted.\n\nQuill — your story starts here.\n\n- A dedicated novel-writing app for iPhone and iPad, with a matching GitHub Pages browser edition.\n- Books, chapter outlines and reordering, formatted prose, scene breaks, focus mode, native/browser spell check, and dark appearance.\n- Character, place, idea, and research notes; chapter synopses and writing status; manuscript and session word goals.\n- Local autosave, immutable saved revisions, parallel-draft review, and recoverable trash.\n- Word (.docx), EPUB, formatted HTML, plain text, print/PDF, and complete JSON backups.\n- Optional shared-folder sync. Choose the same iCloud Drive folder in the iPhone app and desktop Chrome/Edge. Other browsers use backup import/export. Files handles cloud delivery; sync runs while the app is open.\n\niOS 16+. Install Quill.ipa through AltStore Classic. Physical-device installation and iCloud delivery still need verification on your devices.\n\nWeb app: https://kharrisongit.github.io/Quill/\nSource: https://github.com/kharrisongit/Quill",
+      "downloadURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.3/Quill.ipa",
+      "size": 154167
     }
   ],
   "news": [
+    {
+      "title": "Quill 1.0.3",
+      "identifier": "com.kharrison.quill.release-1.0.3",
+      "caption": "Delete chapter is available only in the ⓘ chapter-details menu.",
+      "date": "2026-10-12T22:56:24Z",
+      "tintColor": "705B8B",
+      "appID": "com.kharrison.quill",
+      "url": "https://github.com/kharrisongit/Quill/releases/tag/quill-1.0.3"
+    },
     {
       "title": "Quill 1.0.2",
       "identifier": "com.kharrison.quill.release-1.0.2",
