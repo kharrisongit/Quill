@@ -12,7 +12,7 @@
       "developerName": "kharrison",
       "subtitle": "Your story, one beat at a time",
       "localizedDescription": "Your story starts here. Quill is a writing workspace for iPhone and iPad, with a companion browser app. Write everything yourself, call on AI when you need a hand, and keep your story organized from the first idea to the final page.\n\nA BOOKSHELF OF YOUR OWN\nStart at an illustrated writing desk, open the animated bookshelf, and give each book its own cover. Open a book to reach its Codex, manuscript, and saved drafts. Custom artwork, clear action icons, light and dark themes, and reduced-motion options make the workspace your own.\n\nWRITE ONE BEAT AT A TIME\nThe manuscript editor is your starting point. Generate opens a chapter beat planner so you can write or review the map before generating each beat individually. Show beats to edit separate blocks by hand or ask AI for a revision. Prompt the next beat directly below your writing, or select a word, sentence, or paragraph for a focused AI edit. Review suggestions before applying them; saved revisions and partial drafts keep your work recoverable.\n\nYOUR STORY'S CODEX\nKeep the story summary, plot beats, writing style, and character profiles together for the AI to reference. Build characters yourself or generate editable profiles covering appearance, personality, backstory, motivation, relationships, and arcs. Upload portraits or generate them with Apple Image Playground on supported devices. Ask for the next plot beat when you need inspiration.\n\nREAD AND REVIEW YOUR MANUSCRIPT\nUpdate from manuscript proposes missing Codex context, developments, and character details for you to review. The Plot holes section looks for possible contradictions and missing links, with supporting evidence and possible fixes. Track findings as open, resolved, or dismissed. AI findings are suggestions for the author to assess.\n\nFROM DEDICATION TO EPILOGUE\nAdd and reorder title and copyright pages, dedication, epigraph, contents, foreword, preface, introduction, prologue, chapters, interludes, epilogue, afterword, acknowledgments, appendix, glossary, bibliography, an author page, and custom sections. Use formatted writing, focus mode, spell check, search, word counts, and goals. Export Word, EPUB, HTML, plain text, or print/PDF.\n\nMANAGE DRAFTS AND MODELS\nEach book has its own Drafts area to review, export, or delete unwanted beat maps, writing attempts, and Codex suggestions. Manage Models lets you choose, download, update, or remove models to free storage. Downloads show their percentage beside the name and a progress bar.\n\nCHOOSE YOUR AI\nUse Apple Intelligence on supported devices, or download Qwen, Llama, and Gemma models. Compatible WebGPU browsers also offer Qwen, Llama, and SmolLM2. Connect your own model through an OpenAI-compatible or Anthropic Messages API. Local models have no AI usage fees; initial downloads, compatible hardware, storage, and memory are required. Optional API providers may charge and receive the story context used for generation. Apple controls Intelligence and Image Playground availability.\n\nSAVE AND TAKE YOUR STORY WITH YOU\nAutomatic local saving, revision history, recoverable deleted items, full backups, and optional shared-folder sync help keep your writing available. Your writing stays on your device by default. iCloud Drive folder sync works while the app is open; desktop Chrome and Edge can share that folder, while other browsers use backup import/export.\n\nRequires iOS 16 or later; AI features have additional device requirements. Install through AltStore Classic.\n\nBrowser app: https://kharrisongit.github.io/Quill/",
-      "iconURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.9/quill-icon.png",
+      "iconURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.10/quill-icon.png",
       "tintColor": "705B8B",
       "category": "productivity",
       "minOSVersion": "16.0",
@@ -25,6 +25,15 @@
         "privacy": {}
       },
       "versions": [
+        {
+          "version": "1.0.10",
+          "date": "2026-10-14T05:04:12Z",
+          "localizedDescription": "Readable writing in dark mode.\n\n- Fix button labels, page headings, book titles, and other text retaining light-mode colors on dark backgrounds.\n- Improve contrast for writing placeholders, chapter synopses, manuscript quotations, and generation/save error messages.\n- Refresh the browser cache so the corrected colors reach the web app too.\n- Update the AltStore description and README to cover Quill’s bookshelf, Codex, characters, beat-by-beat writing, book sections, drafts, model choices, and manuscript review tools.\n\nRelease checks include automated data and publisher tests, browser workflows, and the iPhone build. Simulator checks are now optional and skipped by default for faster device testing.",
+          "downloadURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.10/Quill.ipa",
+          "size": 6543589,
+          "minOSVersion": "16.0",
+          "buildVersion": "21"
+        },
         {
           "version": "1.0.9",
           "date": "2026-10-14T04:39:31Z",
@@ -116,14 +125,23 @@
           "buildVersion": "1"
         }
       ],
-      "version": "1.0.9",
-      "versionDate": "2026-10-14T04:39:31Z",
-      "versionDescription": "Your manuscript, one beat at a time.\n\n- Generate opens a chapter beat planner. Review or write the beat map, then generate each beat separately on the manuscript page. Existing prose stays in place.\n- Show beats highlights editable blocks with their own directions and AI revision buttons. Hide beats returns to continuous writing. Add a blank beat or prompt the next beat directly below the manuscript.\n- Select a word, sentence or paragraph and choose Edit selection with AI. Review the proposed replacement before applying it; surrounding writing and earlier versions are preserved.\n- Add front matter, story sections and back matter: title page, copyright, dedication, epigraph, contents, foreword, preface, introduction, prologue, chapters, interludes, epilogue, afterword, acknowledgments, appendix, glossary, bibliography, author page and custom sections. Reorder them in the manuscript; all sections export together.\n- Update from manuscript reads the current writing and proposes missing Codex context, developments and character details. Review and edit additions before saving. Existing character fields and notes are preserved.\n- Plot holes in the Codex checks the manuscript for possible contradictions and missing causal links. Review supporting passages and possible fixes, then track findings as open, resolved or dismissed. Findings are suggestions, not established story facts.\n- Every button has an action icon. Settings now uses a recognizable gear, models a chip, and the bookshelf a shelf symbol.\n- Beat maps, AI writing attempts and revisions are saved in each book’s Drafts. Generation can be stopped while keeping its output. Concurrent manuscript changes block stale AI replacements.\n\nIncludes phone-sized interaction tests for beat planning, individual generation, selected-text editing, cancellation, failed-save recovery, section exports and reviewed Codex updates. AI quality and availability depend on your chosen model and device.",
-      "downloadURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.9/Quill.ipa",
-      "size": 6543506
+      "version": "1.0.10",
+      "versionDate": "2026-10-14T05:04:12Z",
+      "versionDescription": "Readable writing in dark mode.\n\n- Fix button labels, page headings, book titles, and other text retaining light-mode colors on dark backgrounds.\n- Improve contrast for writing placeholders, chapter synopses, manuscript quotations, and generation/save error messages.\n- Refresh the browser cache so the corrected colors reach the web app too.\n- Update the AltStore description and README to cover Quill’s bookshelf, Codex, characters, beat-by-beat writing, book sections, drafts, model choices, and manuscript review tools.\n\nRelease checks include automated data and publisher tests, browser workflows, and the iPhone build. Simulator checks are now optional and skipped by default for faster device testing.",
+      "downloadURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.10/Quill.ipa",
+      "size": 6543589
     }
   ],
   "news": [
+    {
+      "title": "Quill 1.0.10",
+      "identifier": "com.kharrison.quill.release-1.0.10",
+      "caption": "Fix button labels, page headings, book titles, and other text retaining light-mode colors on dark backgrounds.",
+      "date": "2026-10-14T05:04:12Z",
+      "tintColor": "705B8B",
+      "appID": "com.kharrison.quill",
+      "url": "https://github.com/kharrisongit/Quill/releases/tag/quill-1.0.10"
+    },
     {
       "title": "Quill 1.0.9",
       "identifier": "com.kharrison.quill.release-1.0.9",
