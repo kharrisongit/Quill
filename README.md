@@ -20,9 +20,9 @@ A small sample novel is included so you can explore immediately. Choose **New bo
 
 ## Write at your own pace
 
-The normal manuscript editor is the default. Write freely with headings, bold, italic, underline, lists, quotations, scene breaks, undo/redo, focus mode, and built-in offline English spell checking with suggestions and a personal dictionary. Organize sections with titles, synopses, status, reordering, Find & Replace for a section or the whole book, word counts, and writing goals.
+The normal manuscript editor is the default. Write freely with headings, bold, italic, underline, lists, quotations, scene breaks, undo/redo, focus mode, and automatic offline English spell checking with red underlines, tap-to-fix suggestions, and a personal dictionary. Text size is adjustable from **Text size** in the writing tools and saved on your device. Organize sections with titles, synopses, status, reordering, Find & Replace for a section or the whole book, word counts, and writing goals.
 
-**Page break** inserts a visible divider at the cursor and creates a new page in Word, EPUB, and print/HTML exports (a form-feed in plain text). Find & Replace preserves formatting and beat boundaries. Spell Check works without an AI model or internet connection; remembered words stay on this device.
+**Page break** inserts a visible divider at the cursor and creates a new page in Word, EPUB, and print/HTML exports (a form-feed in plain text). Find & Replace opens above the manuscript: type a word or phrase, use the previous/next arrows to visit highlighted matches across sections, then replace them one at a time. **Replace all** is an optional checkbox. Matching supports case and whole-word options and preserves formatting, beat boundaries, and earlier versions. Automatic spelling works without an AI model or internet connection; tap an underlined word for corrections or remember it. Turn live checking off in writer preferences to review later with the manual **Spell Check** button.
 
 When you want help:
 
@@ -30,7 +30,7 @@ When you want help:
 2. Save the plan to add empty beats after your existing prose. Generate each beat individually when you're ready.
 3. Use **Show beats** to reveal editable blocks with their own directions, generation controls, and **Revise with AI** actions. **Hide beats** returns to continuous writing.
 4. Press **Generate next beat** below the manuscript to continue from the story and Codex. Add an optional description to steer it, or start a blank beat and write it yourself.
-5. Select a word, sentence, or paragraph and choose the **Edit with AI** pop-up above the selection for a focused change.
+5. Select a word, sentence, or paragraph and choose the **Revise** pop-up above the selection for a focused change.
 
 Review generated text before applying it. Quill keeps saved drafts and revisions, preserves partial output when generation is stopped, and prevents stale suggestions from replacing writing that changed during a request. A prose request generates one beat at a time; it does not automatically continue through the chapter. Word targets are approximate.
 
@@ -133,3 +133,5 @@ Normal release CI runs the data/publisher tests, phone-sized browser workflows, 
 `source/app.json` supplies the current listing copy. The publisher refreshes that copy while preserving published assets and older versions. Metadata-only updates can edit the current feeds without rebuilding or changing the installed app version.
 
 The app does not currently provide live co-author cursors/comments, DOCX/EPUB import, or professional print typesetting. Notes are plain text; PDF uses the platform print sheet. Physical-device model performance, AltStore installation, iCloud delivery, and ebook reader rendering need device testing.
+
+Select writing to see **Revise** above it. A sentence or passage also offers **Rephrase**, while a single word offers **Synonyms**. These use your selected writing model to propose alternatives in a pop-up; tap one to replace only that selection. Generated-beat suggestions have a larger, resizable editing area, and highlighted beat blocks provide more space for writing.

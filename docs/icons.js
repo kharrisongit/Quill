@@ -1,5 +1,6 @@
 // Familiar, labelled controls. Illustrations decorate screens; these identify actions.
 export const controlIcons={
+ type:'M3 19 9 5l6 14 M5 15h8 M16 11h6 M19 11v10',
  spell:'M3 14 7 3l4 11 M4 10h6 M13 17l3 3 6-7',page:'M6 9V2h12v7 M6 15v7h12v-7 M3 12h3 M9 12h3 M15 12h3 M21 12h1',replace:'M3 7h15l-3-3 M21 17H6l3 3 M7 11h2 M15 13h2',
  settings:'M19.39 8.94 L19.88 10.61 L22.54 10.14 L22.54 13.86 L19.88 13.39 L19.39 15.06 L19.39 15.06 L18.55 16.59 L20.76 18.14 L18.14 20.76 L16.59 18.55 L15.06 19.39 L15.06 19.39 L13.39 19.88 L13.86 22.54 L10.14 22.54 L10.61 19.88 L8.94 19.39 L8.94 19.39 L7.41 18.55 L5.86 20.76 L3.24 18.14 L5.45 16.59 L4.61 15.06 L4.61 15.06 L4.12 13.39 L1.46 13.86 L1.46 10.14 L4.12 10.61 L4.61 8.94 L4.61 8.94 L5.45 7.41 L3.24 5.86 L5.86 3.24 L7.41 5.45 L8.94 4.61 L8.94 4.61 L10.61 4.12 L10.14 1.46 L13.86 1.46 L13.39 4.12 L15.06 4.61 L15.06 4.61 L16.59 5.45 L18.14 3.24 L20.76 5.86 L18.55 7.41 L19.39 8.94z M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
  shelf:'M3 3v18 M21 3v18 M3 11h18 M3 20h18 M6 4v7 M9 4v7 M13 5l2 6 M6 14v6 M10 14v6 M15 13l3 7',
@@ -35,6 +36,7 @@ export const controlIcons={
  list:'M3 5h1 M3 12h1 M3 19h1 M8 5h13 M8 12h13 M8 19h13',rule:'M3 12h6 M15 12h6 M12 12h.01',undo:'M3 9h12a6 6 0 0 1 0 12 M3 9l5-5 M3 9l5 5',redo:'M21 9H9a6 6 0 0 0 0 12 M21 9l-5-5 M21 9l-5 5'
 };
 export const actionIcons={
+ 'writer-preferences':'type','find-close':'close','find-prev':'back','find-next':'next','replace-current':'replace','live-spell-replace':'spell','live-spell-remember':'save','selection-rephrase':'refresh','selection-synonyms':'book','selection-retry':'refresh','selection-use':'check',
  'open-codex':'book','back-writing':'back','spell-check':'spell','page-break':'page','replace-one':'replace','replace-all':'replace','spell-replace':'check','spell-ignore':'next','spell-remember':'save','spell-suggestion':'spell','spell-scan':'refresh',
  'start-screen':'write',bookshelf:'shelf',home:'shelf','open-book':'book','book-door':'book',settings:'settings','book-settings':'book',
  'enter-codex':'book','enter-write':'write','new-book':'plus','new-chapter':'plus','add-section':'plus','create-section':'plus',

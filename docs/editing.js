@@ -2,7 +2,11 @@ import {sanitize} from './export.js';
 
 // Text offsets include block separators, so words cannot match across paragraphs.
 export function manuscriptText(html){
-  const root=document.createElement('div');root.innerHTML=sanitize(html);const nodes=[];let text='';
+  const root=document.createElement('div');root.innerHTML=sanitize(html);return textMap(root);
+}
+// The same offsets work on saved HTML and the live editor, without adding markup.
+export function textMap(root){
+  const nodes=[];let text='';
   const boundary=()=>{if(text&&!text.endsWith('\n'))text+='\n';};
   function walk(node){
     if(node.nodeType===3){nodes.push({node,start:text.length,end:text.length+node.length});text+=node.data;return;}
@@ -49,3 +53,12 @@ export function rememberWord(word){
   if(!/^[\p{L}\p{M}'’]{1,80}$/u.test(word))throw Error('Choose a word of up to 80 letters.');
   const saved=personalWords();if(!saved.includes(word)){if(saved.length>=5000)throw Error('Your personal dictionary has reached its 5,000-word limit.');saved.push(word);localStorage.setItem('quill-personal-dictionary',JSON.stringify(saved));}
 }
+
+export function textRange(root,start,end,expected){
+  const {text,nodes}=textMap(root);
+  if(start<0||end<=start||text.slice(start,end)!==expected)return null;
+  const a=nodes.find(n=>start>=n.start&&start<n.end),b=nodes.find(n=>end>n.start&&end<=n.end);
+  if(!a||!b)return null;
+  const range=document.createRange();range.setStart(a.node,start-a.start);range.setEnd(b.node,end-b.start);return range;
+}
+export function isSingleWord(text){return /^[\p{L}\p{M}]+(?:['’–-][\p{L}\p{M}]+)*$/u.test(String(text).trim());}
