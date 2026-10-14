@@ -19,27 +19,32 @@ for idiom,points,scale in [('iphone',20,2),('iphone',20,3),('iphone',29,2),('iph
 PY
 if [ "$MODE" = simulator ]; then
   SDK=iphonesimulator
-  TARGET="$(uname -m)-apple-ios16.0-simulator"
+  QUILL_ARCH=$(uname -m)
   APP=build/simulator/Quill.app
+  DESTINATION='generic/platform=iOS Simulator'
 else
   SDK=iphoneos
-  TARGET=arm64-apple-ios16.0
+  QUILL_ARCH=arm64
   APP=build/Payload/Quill.app
+  DESTINATION='generic/platform=iOS'
 fi
-rm -rf "$APP"
-mkdir -p "$APP"
-SDKPATH=$(xcrun --sdk "$SDK" --show-sdk-path)
-xcrun --sdk "$SDK" swiftc -swift-version 5 -O -whole-module-optimization -parse-as-library -target "$TARGET" -sdk "$SDKPATH" -module-name Quill Sources/*.swift -o "$APP/Quill"
-xcrun actool build/Assets.xcassets --compile "$APP" --platform "$SDK" --minimum-deployment-target 16.0 --app-icon AppIcon --output-partial-info-plist build/icon-info.plist --target-device iphone --target-device ipad
-mkdir -p "$APP/Web"
-cp docs/* "$APP/Web/"
-python3 - "$APP" "$VERSION" "$BUILD" "$SDK" <<'PY'
+mkdir -p build/Web
+cp docs/* build/Web/
+python3 - build "$VERSION" "$BUILD" "$SDK" <<'PY'
 import plistlib,pathlib,sys
 app,version,build,sdk=sys.argv[1:]
 info=dict(CFBundleDevelopmentRegion='en',CFBundleDisplayName='Quill',CFBundleExecutable='Quill',CFBundleIdentifier='com.kharrison.quill',CFBundleInfoDictionaryVersion='6.0',CFBundleName='Quill',CFBundlePackageType='APPL',CFBundleShortVersionString=version,CFBundleVersion=build,MinimumOSVersion='16.0',LSRequiresIPhoneOS=True,UIDeviceFamily=[1,2],UILaunchScreen={},UISupportedInterfaceOrientations=['UIInterfaceOrientationPortrait','UIInterfaceOrientationLandscapeLeft','UIInterfaceOrientationLandscapeRight'],LSSupportsOpeningDocumentsInPlace=True,ITSAppUsesNonExemptEncryption=False,CFBundleSupportedPlatforms=['iPhoneSimulator' if sdk=='iphonesimulator' else 'iPhoneOS'])
-info.update(plistlib.loads(pathlib.Path('build/icon-info.plist').read_bytes()))
+
 pathlib.Path(app,'Info.plist').write_bytes(plistlib.dumps(info))
 PY
+xcodegen generate --spec project.yml
+xcodebuild -project Quill.xcodeproj -scheme Quill -configuration Release -sdk "$SDK" \
+  -destination "$DESTINATION" -derivedDataPath build/DerivedData \
+  -clonedSourcePackagesDirPath build/Packages CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+  ONLY_ACTIVE_ARCH=YES ARCHS="$QUILL_ARCH" build
+rm -rf "$APP"
+mkdir -p "$(dirname "$APP")"
+cp -R "build/DerivedData/Build/Products/Release-$SDK/Quill.app" "$APP"
 codesign --force --sign - "$APP"
 if [ "$MODE" != simulator ]; then
   (cd build && zip -qry Quill.ipa Payload)

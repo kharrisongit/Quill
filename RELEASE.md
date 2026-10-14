@@ -1,19 +1,12 @@
-Quill 1.0.3 — simpler chapter controls.
+Free chapter writing and full-book plot beats.
 
-- Delete chapter is available only in the ⓘ chapter-details menu.
-- Removed chapter-delete buttons from the chapter list and desktop sidebar.
-- Deletion still asks for confirmation and remains recoverable in Recently deleted.
+- Write one chapter at a time from a prompt and approximate word target.
+- Keep the full plot and writing preferences in the new Plot beats page.
+- Switch between Apple Intelligence and Qwen inside the iPhone/iPad app.
+- Use Qwen in supported WebGPU browsers on computers and Android.
+- Choose balanced Qwen 1.7B or the lighter 0.6B model. First use downloads model files; there are no AI usage charges.
+- Check for Qwen model updates and download them without replacing a working copy until the new model loads.
+- Review generated drafts before using them. Partial drafts are kept when stopped, and older manuscript versions remain recoverable.
+- Tap outside sidebars and dialogs to dismiss them. The chapter writer stays open while generating, with an explicit Stop & keep draft button.
 
-Quill — your story starts here.
-
-- A dedicated novel-writing app for iPhone and iPad, with a matching GitHub Pages browser edition.
-- Books, chapter outlines and reordering, formatted prose, scene breaks, focus mode, native/browser spell check, and dark appearance.
-- Character, place, idea, and research notes; chapter synopses and writing status; manuscript and session word goals.
-- Local autosave, immutable saved revisions, parallel-draft review, and recoverable trash.
-- Word (.docx), EPUB, formatted HTML, plain text, print/PDF, and complete JSON backups.
-- Optional shared-folder sync. Choose the same iCloud Drive folder in the iPhone app and desktop Chrome/Edge. Other browsers use backup import/export. Files handles cloud delivery; sync runs while the app is open.
-
-iOS 16+. Install Quill.ipa through AltStore Classic. Physical-device installation and iCloud delivery still need verification on your devices.
-
-Web app: https://kharrisongit.github.io/Quill/
-Source: https://github.com/kharrisongit/Quill
+Apple Intelligence needs a supported device with iOS 26+ and Apple Intelligence enabled. Qwen needs sufficient memory (and WebGPU in browsers). Chapter length is approximate. Real-device generation speed and prose quality vary by model and hardware.

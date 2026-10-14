@@ -2,7 +2,9 @@ import {union,validate} from './core.js';
 export const native = !!window.webkit?.messageHandlers?.quill;
 let seq=0;const waiting=new Map();
 window.quillReply = ({id,result,error}) => { const p=waiting.get(id);if(!p)return;waiting.delete(id);clearTimeout(p.timer);error?p.reject(Error(error)):p.resolve(result); };
-export function bridge(action,payload={}) {return new Promise((resolve,reject)=>{const id=String(++seq);const timer=setTimeout(()=>{waiting.delete(id);reject(Error('The iPhone action did not finish. Please try again.'));},120000);waiting.set(id,{resolve,reject,timer});window.webkit.messageHandlers.quill.postMessage({id,action,payload});});}
+window.quillProgress = ({id,text,status}) => { const p=waiting.get(id);if(text!==undefined)p?.onProgress?.(text);if(status!==undefined)p?.onStatus?.(status); };
+export function bridge(action,payload={},options={}) {return new Promise((resolve,reject)=>{const id=String(++seq);const timer=setTimeout(()=>{waiting.delete(id);if(['aiGenerate','aiUpdate'].includes(action))bridge('aiCancel').catch(()=>{});reject(Error('The iPhone action did not finish. Your saved writing is kept.'));},options.timeout||120000);waiting.set(id,{resolve,reject,timer,onProgress:options.onProgress,onStatus:options.onStatus});try{window.webkit.messageHandlers.quill.postMessage({id,action,payload});}catch(e){clearTimeout(timer);waiting.delete(id);reject(e);}});}
+
 let db;
 export async function openStorage(){
   if(native)return;

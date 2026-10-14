@@ -1,0 +1,50 @@
+name: Quill
+options:
+  deploymentTarget:
+    iOS: "16.0"
+packages:
+  MLXLM:
+    url: https://github.com/ml-explore/mlx-swift-lm
+    exactVersion: 2.29.2
+  MLX:
+    url: https://github.com/ml-explore/mlx-swift
+    exactVersion: 0.29.1
+  Transformers:
+    url: https://github.com/huggingface/swift-transformers
+    exactVersion: 1.1.0
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    PRODUCT_BUNDLE_IDENTIFIER: com.kharrison.quill
+    TARGETED_DEVICE_FAMILY: "1,2"
+    CODE_SIGNING_ALLOWED: NO
+    GENERATE_INFOPLIST_FILE: NO
+    INFOPLIST_FILE: build/Info.plist
+    ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+targets:
+  Quill:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+      - path: build/Web
+        type: folder
+        buildPhase: resources
+      - path: build/Assets.xcassets
+        buildPhase: resources
+    dependencies:
+      - package: MLXLM
+        product: MLXLLM
+      - package: MLXLM
+        product: MLXLMCommon
+      - package: MLX
+        product: MLX
+      - package: Transformers
+        product: Hub
+      - sdk: FoundationModels.framework
+        weak: true
+schemes:
+  Quill:
+    build:
+      targets:
+        Quill: all

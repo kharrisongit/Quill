@@ -10,6 +10,9 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         w.rootViewController=WritingDesk(); w.makeKeyAndVisible(); window=w
         return true
     }
+    func applicationDidEnterBackground(_ application: UIApplication) {
+        (window?.rootViewController as? WritingDesk)?.writer.cancel()
+    }
     func applicationWillResignActive(_ application: UIApplication) {
         (window?.rootViewController as? WritingDesk)?.web.evaluateJavaScript("window.quillFlush && window.quillFlush()", completionHandler:nil)
     }
@@ -17,6 +20,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 
 final class WritingDesk: UIViewController, WKScriptMessageHandler, WKNavigationDelegate, UIDocumentPickerDelegate {
     var web: WKWebView!
+    let writer=OnDeviceWriter()
     private let io=DispatchQueue(label:"com.kharrison.quill.files",qos:.userInitiated)
     private var root: URL!
     private var folder: URL?
@@ -65,6 +69,10 @@ final class WritingDesk: UIViewController, WKScriptMessageHandler, WKNavigationD
             self.web.evaluateJavaScript("window.quillReply(\(json))",completionHandler:nil)
         }
     }
+    private func writerProgress(_ id:String,status:String) {
+        guard let data=try? JSONSerialization.data(withJSONObject:["id":id,"status":status]),let json=String(data:data,encoding:.utf8) else{return}
+        web.evaluateJavaScript("window.quillProgress && window.quillProgress(\(json))",completionHandler:nil)
+    }
     private func problem(_ text:String)->NSError { NSError(domain:"Quill",code:1,userInfo:[NSLocalizedDescriptionKey:text]) }
     private func validID(_ id:String)->Bool { id.range(of:"^[a-zA-Z0-9-]{1,80}$",options:.regularExpression) != nil }
     private func record(_ raw:Any)throws -> (String,Data) {
@@ -93,6 +101,15 @@ final class WritingDesk: UIViewController, WKScriptMessageHandler, WKNavigationD
         guard message.frameInfo.isMainFrame,let url=message.frameInfo.request.url,url.isFileURL,url.standardizedFileURL.path.hasPrefix(webRoot.standardizedFileURL.path+"/"),let data=message.body as? [String:Any],let id=data["id"] as? String,let action=data["action"] as? String else {return}
         let p=data["payload"] as? [String:Any] ?? [:]
         switch action {
+        case "aiStatus": reply(id,writer.availability(model:p["model"] as? String ?? "apple"))
+        case "aiCheckUpdate": writer.checkUpdate(model:p["model"] as? String ?? "",finish:{[weak self] result,error in self?.reply(id,result as Any? ?? NSNull(),error:error)})
+        case "aiUpdate": writer.update(model:p["model"] as? String ?? "",status:{[weak self] text in self?.writerProgress(id,status:text)},finish:{[weak self] result,error in self?.reply(id,result as Any? ?? NSNull(),error:error)})
+        case "aiCancel": writer.cancel();reply(id,true)
+        case "aiGenerate":
+            writer.generate(id:id,payload:p,status:{[weak self] text in self?.writerProgress(id,status:text)},progress:{[weak self] text in
+                guard let self,let data=try? JSONSerialization.data(withJSONObject:["id":id,"text":text]),let json=String(data:data,encoding:.utf8) else{return}
+                self.web.evaluateJavaScript("window.quillProgress && window.quillProgress(\(json))",completionHandler:nil)
+            },finish:{[weak self] text,error in self?.reply(id,text as Any? ?? NSNull(),error:error)})
         case "load":
             if let initialError {reply(id,error:initialError);return}
             io.async {do{self.reply(id,try self.readRecords(self.root))}catch{self.reply(id,error:error.localizedDescription)}}

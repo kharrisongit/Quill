@@ -19,17 +19,34 @@ Inspired by the book-centered workflow of Reedsy Studio, with an original interf
 
 A small sample novel is included so the workspace can be explored immediately. Create **New book** to start your own.
 
+## Free chapter writing
+
+Open a book’s **Plot beats** page to save its complete plot and optional writing preferences. These autosave with the book and are included in backup, sync and version history. In a chapter, choose **Write chapter**, select a model, enter the events for that chapter and choose an approximate length (500–3,000 words).
+
+- **Apple Intelligence**: iPhone/iPad with iOS 26+, a supported device, and Apple Intelligence enabled and ready. No separate Quill model download.
+- **Qwen 3 1.7B / 0.6B**: selectable in the native app and supported WebGPU browsers. Native inference uses MLX; browsers use WebLLM in a worker. First use downloads approximately 1 GB / 400 MB on iPhone, or 1.2 GB / 0.5 GB in the browser. Runtime GPU memory requirements are larger than the downloads. Older or low-memory devices may only handle the smaller model.
+
+Both options have no AI API or per-chapter fees. Qwen downloads require internet; native installed models load locally thereafter. Browser caches may be cleared by the browser, so offline availability is not guaranteed. Keep the app/tab open while writing. Backgrounding pauses the workflow by stopping it and keeping saved partial text.
+
+The writer reads the full plot, story notes, earlier chapter synopses and the preceding chapter’s ending. Long planning material is condensed, with all chunks read, before the chapter is generated in connected parts. The full original plot is never replaced by the model’s summary. A word target is approximate, and small local models can still make continuity and prose mistakes.
+
+Generated drafts are saved separately from manuscript chapters, including partial results after stopping or an error. **Use draft & edit** creates a manuscript revision only after review. If the chapter changed while the draft was being written, Quill adds a separate chapter instead of replacing it. Older generated drafts remain selectable in the writing panel.
+
+**Check Qwen updates** checks the selected model’s repository revision. **Download update** installs a separate pinned revision and advances the active version only after it loads successfully; a failed or cancelled update preserves the installed pointer. New Qwen architectures/model families require an app integration update. Models are not included in manuscript exports or backups.
+
+Tapping outside a sidebar or dialog dismisses it. The generation/download panel remains open while busy; **Stop & keep draft** ends the operation deliberately. Ordinary dialog close buttons and Escape follow the same rule.
+
 ## iPhone installation
 
 Download `Quill.ipa` from this repository's latest release and open it in **AltStore Classic**. AltStore signs it with your account. The app requires iOS 16 or later; installation/refresh restrictions depend on your AltStore setup.
 
-Dedicated AltStore source: `https://raw.githubusercontent.com/kharrisongit/Quill/main/source/apps.json`
+Quill’s component feed (also imported by the shared **kharrison Apps** source): `https://raw.githubusercontent.com/kharrisongit/Quill/main/source/apps.json`
 
 The app bundles the complete browser workspace inside a native WKWebView shell. It opens offline, persists revisions as atomic files in Application Support, and adds native Files selection, sharing, importing, and printing. It has its own bundle ID: `com.kharrison.quill`.
 
 ## Saving and sync
 
-Writing stays on your device by default. The browser uses IndexedDB. The iPhone app uses native files. The public GitHub repository and Pages hosting receive **no manuscripts**. There is no account, analytics, external editor library, AI service, or backend.
+Writing stays on your device by default. The browser uses IndexedDB. The iPhone app uses native files. The public GitHub repository and Pages hosting receive **no manuscripts**. There is no account, analytics or paid AI service. Chapter generation runs on the device. Qwen fetches model files and update metadata from Hugging Face; the browser also fetches its pinned WebLLM runtime. Manuscript text is not sent to these services.
 
 1. Open **Backup & sync → Connect folder** in the iPhone app and select a folder in **iCloud Drive**, not On My iPhone.
 2. On a Mac or PC with that folder locally synced, open the web app in desktop **Chrome or Edge**, choose **Connect folder**, and select the same folder.
@@ -43,7 +60,7 @@ Safari and mobile browsers do not expose the required live directory access; use
 
 ## Development
 
-No npm dependencies or Xcode project are required.
+The editor has no npm build dependencies. Native builds use Xcode 26, XcodeGen and pinned Swift packages for MLX/Qwen. `project.yml` generates the Xcode project. The browser lazily imports WebLLM 0.2.85 only when Qwen is requested.
 
 ```sh
 node --test Tests/*.test.mjs
@@ -52,7 +69,7 @@ python3 scripts/bundle.py
 python3 -m http.server --directory docs 8080
 ```
 
-Edit `docs/app.js`, `core.js`, `storage.js`, `export.js`, and `style.css`. The deterministic bundler generates `docs/app.bundle.js`, a classic script compatible with the native local-file webview. Commit the generated bundle with source changes. Increment the service-worker cache name when shipping web assets; close all open Quill tabs and reopen to activate an installed update.
+Edit the source modules in `docs/` (including `ai.js` and `ai-runtime.js`) and `style.css`. The deterministic bundler generates `docs/app.bundle.js`, a classic script compatible with the native local-file webview. Commit the generated bundle with source changes. Increment the service-worker cache name when shipping web assets; close all open Quill tabs and reopen to activate an installed update.
 
 On macOS with Xcode selected:
 
