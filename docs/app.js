@@ -581,7 +581,14 @@ const workshopActions={
   'scan-codex':()=>showManuscriptScan('codex'),'scan-holes':()=>showManuscriptScan('holes'),'scan-run':el=>runManuscriptScan(el.dataset.kind),'scan-apply':applyManuscriptReview,
   'hole-status':async el=>{await change(el.dataset.id,{status:el.dataset.status});render();}
 };
-function decorateButtons(){for(const b of document.querySelectorAll('button,label.btn')){const name=b.tagName==='LABEL'?'upload':buttonIconName(b),svg=b.querySelector('svg.icon');if(svg){if(name!=='info'&&svg.querySelector('path')?.getAttribute('d')!==(controlIcons[name]||icons[name]))svg.outerHTML=icon(name);}else b.insertAdjacentHTML('afterbegin',icon(name));}}
+function decorateButtons(){
+  for(const b of document.querySelectorAll('button,label.btn')){
+    const name=(b.tagName==='LABEL'?'upload':buttonIconName(b))||'info';
+    if(b.querySelector('.brand-art'))b.querySelector('.brand-art').outerHTML=icon(name);
+    if(b.classList.contains('close-dialog')||b.dataset.action==='move')for(const n of [...b.childNodes])if(n.nodeType===3)n.remove();
+    const svg=b.querySelector('svg.icon');if(svg){if(name!=='info'&&svg.querySelector('path')?.getAttribute('d')!==(controlIcons[name]||icons[name]))svg.outerHTML=icon(name);}else b.insertAdjacentHTML('afterbegin',icon(name));
+  }
+}
 new MutationObserver(decorateButtons).observe(document.body,{childList:true,subtree:true});
 document.addEventListener('selectionchange',captureSelection);
 document.addEventListener('pointerdown',e=>{if(e.target.closest('[data-action="edit-selection"]'))e.preventDefault();});

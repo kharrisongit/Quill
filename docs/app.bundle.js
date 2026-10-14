@@ -266,11 +266,11 @@ const QuillIcons = (() => {
 
 // Familiar, labelled controls. Illustrations decorate screens; these identify actions.
 const controlIcons={
- settings:'M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1z M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
+ settings:'M19.39 8.94 L19.88 10.61 L22.54 10.14 L22.54 13.86 L19.88 13.39 L19.39 15.06 L19.39 15.06 L18.55 16.59 L20.76 18.14 L18.14 20.76 L16.59 18.55 L15.06 19.39 L15.06 19.39 L13.39 19.88 L13.86 22.54 L10.14 22.54 L10.61 19.88 L8.94 19.39 L8.94 19.39 L7.41 18.55 L5.86 20.76 L3.24 18.14 L5.45 16.59 L4.61 15.06 L4.61 15.06 L4.12 13.39 L1.46 13.86 L1.46 10.14 L4.12 10.61 L4.61 8.94 L4.61 8.94 L5.45 7.41 L3.24 5.86 L5.86 3.24 L7.41 5.45 L8.94 4.61 L8.94 4.61 L10.61 4.12 L10.14 1.46 L13.86 1.46 L13.39 4.12 L15.06 4.61 L15.06 4.61 L16.59 5.45 L18.14 3.24 L20.76 5.86 L18.55 7.41 L19.39 8.94z M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
  shelf:'M3 3v18 M21 3v18 M3 11h18 M3 20h18 M6 4v7 M9 4v7 M13 5l2 6 M6 14v6 M10 14v6 M15 13l3 7',
  book:'M3 4h6a3 3 0 0 1 3 3v14a4 4 0 0 0-4-2H3z M21 4h-6a3 3 0 0 0-3 3v14a4 4 0 0 1 4-2h5z',
  write:'m16 3 5 5-12 12-6 1 1-6z M14 5l5 5',plus:'M12 5v14 M5 12h14',
- gear:'M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1z M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
+ gear:'M19.39 8.94 L19.88 10.61 L22.54 10.14 L22.54 13.86 L19.88 13.39 L19.39 15.06 L19.39 15.06 L18.55 16.59 L20.76 18.14 L18.14 20.76 L16.59 18.55 L15.06 19.39 L15.06 19.39 L13.39 19.88 L13.86 22.54 L10.14 22.54 L10.61 19.88 L8.94 19.39 L8.94 19.39 L7.41 18.55 L5.86 20.76 L3.24 18.14 L5.45 16.59 L4.61 15.06 L4.61 15.06 L4.12 13.39 L1.46 13.86 L1.46 10.14 L4.12 10.61 L4.61 8.94 L4.61 8.94 L5.45 7.41 L3.24 5.86 L5.86 3.24 L7.41 5.45 L8.94 4.61 L8.94 4.61 L10.61 4.12 L10.14 1.46 L13.86 1.46 L13.39 4.12 L15.06 4.61 L15.06 4.61 L16.59 5.45 L18.14 3.24 L20.76 5.86 L18.55 7.41 L19.39 8.94z M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
  close:'M6 6l12 12 M6 18L18 6',back:'m15 5-7 7 7 7',next:'m9 5 7 7-7 7',
  check:'m4 12 5 5L20 6',save:'M4 3h13l4 4v14H3V3z M7 3v6h9V3 M7 21v-8h10v8',
  download:'M12 3v12 M7 10l5 5 5-5 M4 16v5h16v-5',upload:'M12 16V3 M7 8l5-5 5 5 M4 16v5h16v-5',
@@ -1312,7 +1312,14 @@ const workshopActions={
   'scan-codex':()=>showManuscriptScan('codex'),'scan-holes':()=>showManuscriptScan('holes'),'scan-run':el=>runManuscriptScan(el.dataset.kind),'scan-apply':applyManuscriptReview,
   'hole-status':async el=>{await change(el.dataset.id,{status:el.dataset.status});render();}
 };
-function decorateButtons(){for(const b of document.querySelectorAll('button,label.btn')){const name=b.tagName==='LABEL'?'upload':buttonIconName(b),svg=b.querySelector('svg.icon');if(svg){if(name!=='info'&&svg.querySelector('path')?.getAttribute('d')!==(controlIcons[name]||icons[name]))svg.outerHTML=icon(name);}else b.insertAdjacentHTML('afterbegin',icon(name));}}
+function decorateButtons(){
+  for(const b of document.querySelectorAll('button,label.btn')){
+    const name=(b.tagName==='LABEL'?'upload':buttonIconName(b))||'info';
+    if(b.querySelector('.brand-art'))b.querySelector('.brand-art').outerHTML=icon(name);
+    if(b.classList.contains('close-dialog')||b.dataset.action==='move')for(const n of [...b.childNodes])if(n.nodeType===3)n.remove();
+    const svg=b.querySelector('svg.icon');if(svg){if(name!=='info'&&svg.querySelector('path')?.getAttribute('d')!==(controlIcons[name]||icons[name]))svg.outerHTML=icon(name);}else b.insertAdjacentHTML('afterbegin',icon(name));
+  }
+}
 new MutationObserver(decorateButtons).observe(document.body,{childList:true,subtree:true});
 document.addEventListener('selectionchange',captureSelection);
 document.addEventListener('pointerdown',e=>{if(e.target.closest('[data-action="edit-selection"]'))e.preventDefault();});
