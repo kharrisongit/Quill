@@ -45,6 +45,17 @@ xcodebuild -project Quill.xcodeproj -scheme Quill -configuration Release -sdk "$
 rm -rf "$APP"
 mkdir -p "$(dirname "$APP")"
 cp -R "build/DerivedData/Build/Products/Release-$SDK/Quill.app" "$APP"
+python3 - "$APP" <<'PY'
+import pathlib,sys
+notices=['Third-party software notices for Quill\n']
+for path in sorted(pathlib.Path('build/Packages/checkouts').rglob('*')):
+    if not path.is_file() or '.git' in path.parts:
+        continue
+    if path.name.upper().split('.')[0] not in {'LICENSE','LICENCE','COPYING','NOTICE'}:
+        continue
+    notices.append('\n'+'='*72+'\n'+str(path.relative_to('build/Packages/checkouts'))+'\n\n'+path.read_text(errors='replace'))
+pathlib.Path(sys.argv[1],'Web','ThirdPartyNotices.txt').write_text('\n'.join(notices))
+PY
 codesign --force --sign - "$APP"
 if [ "$MODE" != simulator ]; then
   (cd build && zip -qry Quill.ipa Payload)
