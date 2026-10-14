@@ -134,3 +134,8 @@ html.desk-open,html.desk-open body,html.desk-open #app{background:var(--bg)}
 .scene-curtain{background:#102e37ee}.flipping-leaf{background:linear-gradient(90deg,var(--book-shade),var(--book-paper) 12%);border-color:var(--book-rule);color:var(--gold)}
 .search-match mark,.spelling-issue mark{background:#e5c997;color:#243e44}.dark .search-match mark,.dark .spelling-issue mark{background:#80b8b3;color:#102c37}
 @media print{body{background:white;color:#182c30}.paper,.dark .paper{box-shadow:none}.writing-tools,.selection-popover{display:none!important}}
+/* Keep the hit area fixed when a pointer rests on a button edge. */
+.start-choice:hover{transform:none;box-shadow:0 10px 28px #123b3828}
+@media(prefers-reduced-motion:reduce){button:hover,button:active{transform:none!important}}
+.reduce-motion button:hover,.reduce-motion button:active{transform:none!important}
+#toast{color:var(--on-accent)}.progress span,.download-track>span{background:linear-gradient(90deg,var(--purple),var(--gold))}

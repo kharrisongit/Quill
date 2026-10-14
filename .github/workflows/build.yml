@@ -59,12 +59,11 @@ jobs:
           npx playwright install chromium
           node Tests/serve.cjs > /tmp/quill-test-server.log 2>&1 &
           curl --fail --retry 10 --retry-connrefused --retry-delay 1 http://127.0.0.1:8088/ -o /dev/null
-          node Tests/ui.cjs
-          node Tests/browser-ai.cjs
-          node Tests/models.cjs
-          node Tests/desk.cjs
-          node Tests/workshop.cjs
-          node Tests/editing.cjs
+          QUILL_TEST_STATUS=0
+          for suite in ui browser-ai models desk workshop editing; do
+            node "Tests/$suite.cjs" || QUILL_TEST_STATUS=1
+          done
+          exit "$QUILL_TEST_STATUS"
       - name: Build IPA
         env:
           QUILL_VERSION: ${{ steps.release.outputs.version }}
