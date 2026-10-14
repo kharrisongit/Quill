@@ -36,7 +36,7 @@ export const controlIcons={
  list:'M3 5h1 M3 12h1 M3 19h1 M8 5h13 M8 12h13 M8 19h13',rule:'M3 12h6 M15 12h6 M12 12h.01',undo:'M3 9h12a6 6 0 0 1 0 12 M3 9l5-5 M3 9l5 5',redo:'M21 9H9a6 6 0 0 0 0 12 M21 9l-5-5 M21 9l-5 5'
 };
 export const actionIcons={
- 'writer-preferences':'type','find-close':'close','find-prev':'back','find-next':'next','replace-current':'replace','live-spell-replace':'spell','live-spell-remember':'save','selection-rephrase':'refresh','selection-synonyms':'book','selection-retry':'refresh','selection-use':'check',
+ 'save-beat-preferences':'save','reset-beat-preferences':'refresh','writer-preferences':'type','find-close':'close','find-prev':'back','find-next':'next','replace-current':'replace','live-spell-replace':'spell','live-spell-remember':'save','selection-rephrase':'refresh','selection-synonyms':'book','selection-retry':'refresh','selection-use':'check',
  'open-codex':'book','back-writing':'back','spell-check':'spell','page-break':'page','replace-one':'replace','replace-all':'replace','spell-replace':'check','spell-ignore':'next','spell-remember':'save','spell-suggestion':'spell','spell-scan':'refresh',
  'start-screen':'write',bookshelf:'shelf',home:'shelf','open-book':'book','book-door':'book',settings:'settings','book-settings':'book',
  'enter-codex':'book','enter-write':'write','new-book':'plus','new-chapter':'plus','add-section':'plus','create-section':'plus',
