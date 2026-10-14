@@ -110,6 +110,7 @@ const assert=require('node:assert/strict');
     await page.locator('[data-action="new-character"]').click();await page.locator('#character-title').fill('Neri');await page.locator('#character-appearance').fill('Silver eyes');await page.locator('#character-motivation').fill('Find her brother');
     await page.locator('[data-action="generate-portrait"]').click();await page.waitForFunction(()=>document.querySelector('#character-portrait').getAttribute('src')?.startsWith('data:image/jpeg'));
     await page.locator('#character-form [data-action="close"]').click();await page.waitForFunction(()=>!document.querySelector('#modal').open);
+    await page.waitForFunction(()=>document.querySelectorAll('.character-card').length===2);
     assert.equal(await page.locator('.character-card').count(),2);
     await page.reload();await page.locator('[data-action="open-book"]').first().click();await page.locator('[data-action="sidebar"]').click();await page.locator('[data-view="plot"]').click();
     assert.equal(await page.locator('#story-summary').inputValue(),'A city built on a sleeping whale.');await page.locator('[data-tab="characters"]').click();
