@@ -1,5 +1,6 @@
-Fixes the top of scrolling popups being cut off on iPhone.
+Fixes the iPhone writing toolbar spacing and disables pinch-to-zoom throughout Quill.
 
-- Keeps the revision panel and other popups below the status bar and clear of the home indicator, including after scrolling down and back to the top.
-- Adjusts popup bounds for portrait and landscape safe areas.
-- Contains scrolling inside the popup so reaching either end does not scroll the page behind it.
+- Restores the status-bar spacing around the Quill logo, Export, and the other top toolbar controls.
+- Keeps the controls centered below the status bar, using the existing header space.
+- Protects the toolbar from the notch in landscape as well as portrait.
+- Disables page pinch-to-zoom in the native app, editor, and popups. Normal scrolling and the manuscript Text size control remain available.

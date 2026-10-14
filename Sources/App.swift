@@ -53,16 +53,22 @@ final class WritingDesk: UIViewController, WKScriptMessageHandler, WKNavigationD
         let config=WKWebViewConfiguration()
         config.userContentController.add(self,name:"quill")
         config.websiteDataStore = .default()
+        config.ignoresViewportScaleLimits = false
         web=WKWebView(frame:.zero,configuration:config)
         web.navigationDelegate=self
         web.isOpaque=false;web.backgroundColor=view.backgroundColor
         web.scrollView.contentInsetAdjustmentBehavior = .never
         web.scrollView.bounces=false;web.scrollView.alwaysBounceVertical=false
+        web.scrollView.pinchGestureRecognizer?.isEnabled=false
         web.scrollView.backgroundColor=view.backgroundColor
         web.translatesAutoresizingMaskIntoConstraints=false
         view.addSubview(web)
         NSLayoutConstraint.activate([web.topAnchor.constraint(equalTo:view.topAnchor),web.bottomAnchor.constraint(equalTo:view.bottomAnchor),web.leadingAnchor.constraint(equalTo:view.leadingAnchor),web.trailingAnchor.constraint(equalTo:view.trailingAnchor)])
         web.loadFileURL(webRoot.appendingPathComponent("index.html"),allowingReadAccessTo:webRoot)
+    }
+    func webView(_ webView:WKWebView,didFinish navigation:WKNavigation!) {
+        // WebKit can update its zoom recognizer when the document finishes loading.
+        webView.scrollView.pinchGestureRecognizer?.isEnabled=false
     }
     func webView(_ webView:WKWebView,decidePolicyFor navigationAction:WKNavigationAction,decisionHandler:@escaping(WKNavigationActionPolicy)->Void) {
         guard let url=navigationAction.request.url else { decisionHandler(.cancel);return }

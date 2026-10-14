@@ -984,6 +984,9 @@ const {defaultBeatPrompt,chapterLengths,textToHTML,canUseDraft,buildChapterConte
 const {modelChoices,checkModel,createWriter,checkQwenUpdate,updateQwen,modelStorage,deleteModel}=QuillAIRuntime;
 const {sanitize,plain,manuscriptHTML,epub,docx}=QuillExport;
 const $=s=>document.querySelector(s), app=$('#app'), modal=$('#modal');
+// Keep page zoom fixed across the editor and dialogs; manuscript Text size remains available.
+for(const type of ['gesturestart','gesturechange'])document.addEventListener(type,e=>e.preventDefault(),{passive:false});
+document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
 const icons={book:'M3 3h6a3 3 0 0 1 3 3v15a4 4 0 0 0-4-2H3z M21 3h-6a3 3 0 0 0-3 3v15a4 4 0 0 1 4-2h5z',write:'m16 3 5 5-12 12-6 1 1-6z M14 5l5 5',grid:'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',plus:'M12 5v14 M5 12h14',search:'M21 21l-5-5 M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0',settings:'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M12 2v3 M12 19v3 M2 12h3 M19 12h3 M5 5l2 2 M17 17l2 2 M5 19l2-2 M17 7l2-2',focus:'M8 3H3v5 M16 3h5v5 M3 16v5h5 M21 16v5h-5',export:'M12 15V2 M7 7l5-5 5 5 M4 13v8h16v-8',back:'M15 4l-8 8 8 8',menu:'M4 6h16 M4 12h16 M4 18h16',clock:'M12 8v5l3 2 M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',note:'M5 2h14v20H5z M8 7h8 M8 11h8 M8 15h5',trash:'M3 6h18 M9 6V3h6v3 M5 6l1 15h12l1-15 M10 10v7 M14 10v7',sync:'M20 6v5h-5 M4 18v-5h5 M5 8a8 8 0 0 1 14-3l1 6 M19 16A8 8 0 0 1 5 19l-1-6',info:'M12 11v6 M12 7v.1 M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',check:'m5 12 4 4L19 6'};
 const icon=n=>`<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${controlIcons[n]||icons[n]||controlIcons.info}"/></svg>`;
 const btn=(action,label,i='',classes='',extra='')=>`<button type="button" class="btn ${classes}" data-action="${action}" ${extra}>${icon(actionIcons[action]||i||'info')}${label}</button>`;
