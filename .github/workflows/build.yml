@@ -52,7 +52,8 @@ jobs:
         run: |
           npm install --no-save --package-lock=false playwright@1.56.1
           npx playwright install chromium
-          python3 -m http.server 8088 --directory docs > /tmp/quill-test-server.log 2>&1 &
+          node Tests/serve.cjs > /tmp/quill-test-server.log 2>&1 &
+          curl --fail --retry 10 --retry-connrefused --retry-delay 1 http://127.0.0.1:8088/ -o /dev/null
           node Tests/ui.cjs
           node Tests/browser-ai.cjs
           node Tests/models.cjs
@@ -108,4 +109,5 @@ jobs:
             /tmp/quill-*-test.png
             /tmp/quill-outline-review.png
             /tmp/quill-manage-models.png
+            /tmp/quill-test-server.log
           if-no-files-found: ignore

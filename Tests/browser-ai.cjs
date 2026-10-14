@@ -18,7 +18,7 @@ const assert=require('node:assert/strict');
         return {resetChat:async()=>{},chat:{completions:{create:async()=>({[Symbol.asyncIterator](){return {next(){window.pendingToken=true;return new Promise(()=>{});}};}})}}};
       }
     `}));
-    await page.goto(process.env.QUILL_TEST_URL||'http://127.0.0.1:8088');
+    await page.goto(process.env.QUILL_TEST_URL||'http://127.0.0.1:8088',{waitUntil:'domcontentloaded'});
     const cancelled=await page.evaluate(async()=>{
       const runtime=await import('./ai-runtime.js');const controller=new AbortController();
       const writer=await runtime.createWriter('qwen-0.6',{signal:controller.signal,onStatus:()=>{}});

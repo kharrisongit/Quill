@@ -33,7 +33,7 @@ const assert=require('node:assert/strict');
         reply(true);
       }}}};
     });
-    await page.goto(process.env.QUILL_TEST_URL||'http://127.0.0.1:8088');
+    await page.goto(process.env.QUILL_TEST_URL||'http://127.0.0.1:8088',{waitUntil:'domcontentloaded'});
     await page.locator('[data-action="open-book"]').first().click();
     await page.locator('[data-action="sidebar"]').click();
     assert(await page.locator('body').evaluate(el=>el.classList.contains('sidebar-open')));

@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 (async()=>{
  const browser=await chromium.launch({headless:true,...(process.env.QUILL_CHROME?{executablePath:process.env.QUILL_CHROME}:{})});
  try{
-  const page=await browser.newPage();await page.goto(process.env.QUILL_TEST_URL||'http://127.0.0.1:8088');
+  const page=await browser.newPage();await page.goto(process.env.QUILL_TEST_URL||'http://127.0.0.1:8088',{waitUntil:'domcontentloaded'});
   const result=await page.evaluate(async()=>{
    const api=await import('./connections.js'),runtime=await import('./ai-runtime.js');
    const p=await api.saveConnection({name:'My server',model:'custom-id',endpoint:'https://models.example/v1',format:'openai'},'test-secret');
