@@ -37,7 +37,7 @@ export const actionIcons={
  'start-screen':'write',bookshelf:'shelf',home:'shelf','open-book':'book','book-door':'book',settings:'settings','book-settings':'book',
  'enter-codex':'book','enter-write':'write','new-book':'plus','new-chapter':'plus','add-section':'plus','create-section':'plus',
  'write-ai':'beats','beat-plan':'beats','toggle-beats':'eye','split-beat':'split','edit-selection':'select','generate-inline':'spark','generate-beat':'spark','edit-beat-ai':'write','edit-beat-plan':'note',
- 'save-plan':'check','suggest-plan':'spark','work-generate':'spark','work-stop':'stop','work-apply':'check','work-back':'back',
+ 'save-plan':'check','suggest-plan':'spark','work-generate':'spark','work-stop':'stop','work-apply':'check','work-back':'back','work-inline-close':'back',
  'scan-codex':'scan','scan-holes':'search','scan-run':'scan','scan-apply':'check','hole-status':'check',
  'manage-drafts':'note','review-draft':'eye','delete-one-draft':'trash','delete-drafts':'trash','confirm-draft-delete':'trash','export-draft':'export','back-drafts':'back','open-saved-draft':'write',
  'manage-models':'model','install-model':'download','use-model':'check','delete-model':'trash','confirm-model-delete':'trash',
