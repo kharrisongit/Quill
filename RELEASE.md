@@ -1,10 +1,9 @@
-Beat generation now checks its work for repetition.
+Synonym suggestions are more reliable across writing models.
 
-- Each generation first plans one concrete new development, then drafts and reviews that same beat against the preceding manuscript.
-- Review looks for repeated ideas even when reworded, renewed resolve or contemplation without action, continuity errors, and stock emotional or symbolic explanations.
-- Exact checks catch repeated eight-word phrases and an editable list of avoided phrases, including “weight of” and “a reminder.” Edit the list in Settings → Beat generation alongside your default prompt.
-- Flagged drafts receive up to two rewrites. Rewrites remove redundant material rather than swapping in synonyms, and never generate an additional beat.
-- Beats can end below their target word count to avoid padding. Location continuity is checked silently, without requiring a setting recap.
-- Stop or a failed rewrite keeps the available prose. Remaining issues are shown with the saved suggestion; nothing replaces manuscript text until you apply it.
+- Accepts JSON, numbered or bulleted lists, one suggestion per line, and lists with short definitions instead of discarding usable answers.
+- Supports short alternatives such as “came across,” alongside single-word synonyms, and preserves the selected word’s capitalization.
+- Uses a focused context-based prompt and automatically retries once with simpler instructions when an answer has no usable suggestions.
+- Fixes nearby context for selections deep in long beats. Rephrase also accepts wrapped JSON and numbered alternatives.
+- Stop cancels recovery. Nothing changes until you tap a suggestion, and only the selected text is replaced; earlier writing stays in history.
 
-The review passes take extra time and additional requests with API models. Model judgment can still miss repetition or other writing problems. Custom default prompts remain intact.
+Suggestions still depend on your selected model. Names and some words may have no suitable alternative; Quill distinguishes an unreadable response from an empty list instead of telling you to change models.

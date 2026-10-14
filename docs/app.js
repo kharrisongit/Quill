@@ -686,8 +686,11 @@ async function showSelectionOptions(kind,selection){
   await flush();const c=find(entryId),beat=manuscriptBeats(c).find(b=>b.id===selection.beatId);
   if(!beat||sanitize(beat.html)!==selection.html)throw Error('This passage changed. Select it again.');
   workshopEdit=null;workshopInline=false;characterEdit=null;aiEdit=null;
-  selectionOptions={kind,selection:{...selection},sourceRevision:c.revision.id,choices:[],surrounding:plain(beat.html).slice(Math.max(0,selection.start-900),selection.end+900)};
-  showModal(modalHead(kind==='synonyms'?'Synonyms':'Rephrase','Tap a suggestion to replace only the selected writing. Your earlier version stays in history.')+`<blockquote class="selection-excerpt">${esc(selection.text)}</blockquote>${modelSelect()}<div class="row wrap">${btn('selection-retry','New suggestions','refresh','subtle')}${btn('extra-stop','Stop','stop','subtle','id="extra-stop" hidden')}</div><p id="extra-status" role="status"></p><div id="selection-choices"></div>`);
+  // Selection offsets use Range.toString(), not the export helper's added
+  // paragraph breaks. Use the same text here so long beats keep nearby context.
+  const contextRoot=document.createElement('div');contextRoot.innerHTML=sanitize(beat.html);
+  selectionOptions={kind,selection:{...selection},sourceRevision:c.revision.id,choices:[],surrounding:contextRoot.textContent.slice(Math.max(0,selection.start-900),selection.end+900)};
+  showModal(modalHead(kind==='synonyms'?'Synonyms':'Rephrase',kind==='synonyms'?'Choose a word or short phrase that fits your sentence. Tap to replace only the selection; your earlier version stays in history.':'Tap a suggestion to replace only the selected writing. Your earlier version stays in history.')+`<blockquote class="selection-excerpt">${esc(selection.text)}</blockquote>${modelSelect()}<div class="row wrap">${btn('selection-retry','New suggestions','refresh','subtle')}${btn('extra-stop','Stop','stop','subtle','id="extra-stop" hidden')}</div><p id="extra-status" role="status"></p><div id="selection-choices"></div>`);
   await codexModelStatus();await generateSelectionOptions();
 }
 async function generateSelectionOptions(){
