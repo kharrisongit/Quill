@@ -12,7 +12,7 @@
       "developerName": "kharrison",
       "subtitle": "Your story, one beat at a time",
       "localizedDescription": "Your story starts here. Quill is a writing workspace for iPhone and iPad, with a companion browser app. Write everything yourself, call on AI when you need a hand, and keep your story organized from the first idea to the final page.\n\nA BOOKSHELF OF YOUR OWN\nStart at an illustrated writing desk, open the animated bookshelf, and give each book its own cover. Open a book to reach its Codex, manuscript, and saved drafts. Custom artwork, clear action icons, light and dark themes, and reduced-motion options make the workspace your own.\n\nWRITE ONE BEAT AT A TIME\nThe manuscript editor is your starting point. Generate opens a chapter beat planner so you can write or review the map before generating each beat individually. Show beats to edit separate blocks by hand or ask AI for a revision. Prompt the next beat directly below your writing, or select a word, sentence, or paragraph to Revise, Rephrase, or find contextual Synonyms. Review suggestions before applying them; saved revisions and partial drafts keep your work recoverable.\n\nYOUR STORY'S CODEX\nKeep the story summary, plot beats, writing style, and character profiles together for the AI to reference. Build characters yourself or generate editable profiles covering appearance, personality, backstory, motivation, relationships, and arcs. Upload portraits or generate them with Apple Image Playground on supported devices. Ask for the next plot beat when you need inspiration.\n\nREAD AND REVIEW YOUR MANUSCRIPT\nUpdate from manuscript proposes missing Codex context, developments, and character details for you to review. The Plot holes section looks for possible contradictions and missing links, with supporting evidence and possible fixes. Track findings as open, resolved, or dismissed. AI findings are suggestions for the author to assess.\n\nFROM DEDICATION TO EPILOGUE\nAdd and reorder title and copyright pages, dedication, epigraph, contents, foreword, preface, introduction, prologue, chapters, interludes, epilogue, afterword, acknowledgments, appendix, glossary, bibliography, an author page, and custom sections. Use formatted writing, focus mode, spell check, search, word counts, and goals. Export Word, EPUB, HTML, plain text, or print/PDF.\n\nMANAGE DRAFTS AND MODELS\nEach book has its own Drafts area to review, export, or delete unwanted beat maps, writing attempts, and Codex suggestions. Manage Models lets you choose, download, update, or remove models to free storage. Downloads show their percentage beside the name and a progress bar.\n\nCHOOSE YOUR AI\nUse Apple Intelligence on supported devices, or download Qwen, Llama, and Gemma models. Compatible WebGPU browsers also offer Qwen, Llama, and SmolLM2. Connect your own model through an OpenAI-compatible or Anthropic Messages API. Local models have no AI usage fees; initial downloads, compatible hardware, storage, and memory are required. Optional API providers may charge and receive the story context used for generation. Apple controls Intelligence and Image Playground availability.\n\nSAVE AND TAKE YOUR STORY WITH YOU\nAutomatic local saving, revision history, recoverable deleted items, full backups, and optional shared-folder sync help keep your writing available. Your writing stays on your device by default. iCloud Drive folder sync works while the app is open; desktop Chrome and Edge can share that folder, while other browsers use backup import/export.\n\nRequires iOS 16 or later; AI features have additional device requirements. Install through AltStore Classic.\n\nBrowser app: https://kharrisongit.github.io/Quill/\n\nNEW EDITING TOOLS\nAutomatic offline English spell checking underlines unrecognized words in red; tap for corrections or review later with manual Spell Check. Select writing to Revise, Rephrase a passage, or choose a Synonym for one word. Find & Replace visits highlighted manuscript matches with previous/next arrows, replaces one at a time by default, and offers an optional Replace all checkbox. Adjust writer text size and enjoy larger beat editing areas. Insert export-ready page breaks at the cursor. Generate the next beat with an optional description. Customize the default beat prompt and avoided phrases in Settings. Each generated beat is planned and reviewed for repeated ideas, clichés, stalled action and continuity, with up to two rewrites when flagged. Reviews take extra time and API requests; model judgment can still miss problems. The latest manuscript ending stays in context. Open-book page controls turn to the Codex or resume your last edited section.",
-      "iconURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.14/quill-icon.png",
+      "iconURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.15/quill-icon.png",
       "tintColor": "705B8B",
       "category": "productivity",
       "minOSVersion": "16.0",
@@ -25,6 +25,15 @@
         "privacy": {}
       },
       "versions": [
+        {
+          "version": "1.0.15",
+          "date": "2026-10-14T15:41:44Z",
+          "localizedDescription": "Synonym suggestions are more reliable across writing models.\n\n- Accepts JSON, numbered or bulleted lists, one suggestion per line, and lists with short definitions instead of discarding usable answers.\n- Supports short alternatives such as “came across,” alongside single-word synonyms, and preserves the selected word’s capitalization.\n- Uses a focused context-based prompt and automatically retries once with simpler instructions when an answer has no usable suggestions.\n- Fixes nearby context for selections deep in long beats. Rephrase also accepts wrapped JSON and numbered alternatives.\n- Stop cancels recovery. Nothing changes until you tap a suggestion, and only the selected text is replaced; earlier writing stays in history.\n\nSuggestions still depend on your selected model. Names and some words may have no suitable alternative; Quill distinguishes an unreadable response from an empty list instead of telling you to change models.",
+          "downloadURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.15/Quill.ipa",
+          "size": 6788707,
+          "minOSVersion": "16.0",
+          "buildVersion": "29"
+        },
         {
           "version": "1.0.14",
           "date": "2026-10-14T06:48:01Z",
@@ -161,14 +170,23 @@
           "buildVersion": "1"
         }
       ],
-      "version": "1.0.14",
-      "versionDate": "2026-10-14T06:48:01Z",
-      "versionDescription": "Beat generation now checks its work for repetition.\n\n- Each generation first plans one concrete new development, then drafts and reviews that same beat against the preceding manuscript.\n- Review looks for repeated ideas even when reworded, renewed resolve or contemplation without action, continuity errors, and stock emotional or symbolic explanations.\n- Exact checks catch repeated eight-word phrases and an editable list of avoided phrases, including “weight of” and “a reminder.” Edit the list in Settings → Beat generation alongside your default prompt.\n- Flagged drafts receive up to two rewrites. Rewrites remove redundant material rather than swapping in synonyms, and never generate an additional beat.\n- Beats can end below their target word count to avoid padding. Location continuity is checked silently, without requiring a setting recap.\n- Stop or a failed rewrite keeps the available prose. Remaining issues are shown with the saved suggestion; nothing replaces manuscript text until you apply it.\n\nThe review passes take extra time and additional requests with API models. Model judgment can still miss repetition or other writing problems. Custom default prompts remain intact.",
-      "downloadURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.14/Quill.ipa",
-      "size": 6784878
+      "version": "1.0.15",
+      "versionDate": "2026-10-14T15:41:44Z",
+      "versionDescription": "Synonym suggestions are more reliable across writing models.\n\n- Accepts JSON, numbered or bulleted lists, one suggestion per line, and lists with short definitions instead of discarding usable answers.\n- Supports short alternatives such as “came across,” alongside single-word synonyms, and preserves the selected word’s capitalization.\n- Uses a focused context-based prompt and automatically retries once with simpler instructions when an answer has no usable suggestions.\n- Fixes nearby context for selections deep in long beats. Rephrase also accepts wrapped JSON and numbered alternatives.\n- Stop cancels recovery. Nothing changes until you tap a suggestion, and only the selected text is replaced; earlier writing stays in history.\n\nSuggestions still depend on your selected model. Names and some words may have no suitable alternative; Quill distinguishes an unreadable response from an empty list instead of telling you to change models.",
+      "downloadURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.15/Quill.ipa",
+      "size": 6788707
     }
   ],
   "news": [
+    {
+      "title": "Quill 1.0.15",
+      "identifier": "com.kharrison.quill.release-1.0.15",
+      "caption": "Accepts JSON, numbered or bulleted lists, one suggestion per line, and lists with short definitions instead of discar…",
+      "date": "2026-10-14T15:41:44Z",
+      "tintColor": "705B8B",
+      "appID": "com.kharrison.quill",
+      "url": "https://github.com/kharrisongit/Quill/releases/tag/quill-1.0.15"
+    },
     {
       "title": "Quill 1.0.14",
       "identifier": "com.kharrison.quill.release-1.0.14",
