@@ -1,6 +1,8 @@
 // IDs remain stable across app updates and are separate from manuscript storage.
 export const localModels = [
   {id:'qwen-1.7',name:'Qwen 3 · 1.7B',size:'1 GB',web:'Qwen3-1.7B',description:'Balanced local writing'},
+  {id:'qwen-4b-instruct',name:'Qwen 3 · 4B Instruct',size:'2.3 GB',web:null,description:'Instruction-focused · iPhone/iPad with 12 GB memory or more'},
+  {id:'smol-3b',name:'SmolLM3 · 3B',size:'1.8 GB',web:null,description:'Local alternative · iPhone/iPad with 8 GB memory or more'},
   {id:'qwen-0.6',name:'Qwen 3 · 0.6B',size:'400 MB',web:'Qwen3-0.6B',description:'Smallest download'},
   {id:'llama-1b',name:'Llama 3.2 · 1B',size:'700 MB',web:'Llama-3.2-1B-Instruct',description:'Compact alternative'},
   {id:'llama-3b',name:'Llama 3.2 · 3B',size:'1.8 GB',web:'Llama-3.2-3B-Instruct',description:'Larger model · needs more memory'},

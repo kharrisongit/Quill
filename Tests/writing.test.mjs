@@ -21,3 +21,27 @@ test('Latest ending stays verbatim when earlier prose is condensed; preferences 
 test('Oversized beat preferences are rejected before starting generation',async()=>{await assert.rejects(generateBeat({...input,beatInstructions:'x'.repeat(2401)},{request:async()=>{throw Error('must not call')}}),/2,400/);});
 
 test('Unicode beat preferences fit native instruction limits without being truncated',async()=>{const prefs='写具体动作。'.repeat(250);let call;await generateBeat({...input,beatInstructions:prefs},{request:async p=>{if(p.instructions.startsWith('Write exactly one'))call=p;return 'A new action.';}});assert(new TextEncoder().encode(call.instructions).length<=4000);assert(new TextEncoder().encode(call.prompt).length<=24000);assert(call.prompt.includes(prefs));});
+
+test('An echoed revision retries with the exact direction and publishes only the changed answer',async()=>{
+  const original='The house had been waiting for her. Mara found the key.',changed='Mara found the key, but tears blurred the waiting house.',calls=[],shown=[],statuses=[];
+  const result=await revisePassage({...input,selectedText:original,editPrompt:'Make her very very sad.'},{request:async(p,progress)=>{calls.push(p);progress?.(original);return calls.length===1?original:changed;},onText:t=>shown.push(t),onStatus:t=>statuses.push(t)});
+  assert.equal(result,changed);assert.equal(calls.length,2);assert.deepEqual(shown,[changed]);
+  assert(calls.every(p=>p.prompt.includes('Make her very very sad.')));assert.match(calls[0].instructions,/Change emotions, reactions, actions or dialogue/);assert.match(calls[1].prompt,/previous answer copied/);assert(statuses.some(s=>s.includes('unchanged')));
+});
+test('Whitespace-only echoes fail after one retry without publishing a usable suggestion',async()=>{
+  let calls=0;const shown=[];
+  await assert.rejects(revisePassage({...input,selectedText:'Mara found the key.',editPrompt:'Make her sad.'},{request:async(p,progress)=>{calls++;progress?.('Mara found the key.');return '  Mara\nfound  the key. ';},onText:t=>shown.push(t)}),/unchanged twice/);
+  assert.equal(calls,2);assert.deepEqual(shown,[]);
+});
+test('A stopped revision or a provider failure does not start another request',async()=>{
+  for(const stop of [true,false]){const controller=new AbortController();let calls=0;
+    await assert.rejects(revisePassage({...input,selectedText:'Mara waited.',editPrompt:'Make her sad.'},{signal:controller.signal,request:async()=>{calls++;if(stop){controller.abort();return 'Mara waited.';}throw Error('Connection failed');}}),stop?{name:'AbortError'}:/Connection failed/);assert.equal(calls,1);
+  }
+});
+test('Punctuation and capitalization edits count as changes',async()=>{
+  for(const text of ['mara waited.','Mara waited!'])assert.equal(await revisePassage({...input,selectedText:'Mara waited.',editPrompt:'Change punctuation or case.'},{request:async()=>text}),text);
+});
+test('Focused revisions keep exact Unicode direction within native byte limits and skip chapter planning',async()=>{
+  const selectedText='她'.repeat(4000),editPrompt='悲'.repeat(2000);let calls=0;
+  await revisePassage({...input,selectedText,editPrompt,style:'简'.repeat(1000),surrounding:'文'.repeat(10000),notes:'a'.repeat(310000)},{request:async p=>{calls++;assert(p.prompt.includes(selectedText));assert(p.prompt.includes(editPrompt));assert(new TextEncoder().encode(p.prompt).length<=24000);assert(new TextEncoder().encode(p.instructions).length<=4000);return '她很悲伤。';}});assert.equal(calls,1);
+});

@@ -62,22 +62,24 @@ Draft cleanup removes the selected text and its saved checkpoints while preservi
 
 Normal manuscript revision history and recoverable deleted books, sections, and notes remain available separately.
 
+Revise sends the exact requested change with the selected passage and nearby prose. It retries once if a model echoes the selection unchanged (including whitespace-only differences). If both attempts fail, it shows an error and leaves the suggestion empty. You still review every changed suggestion before applying it; a different result is not a guarantee that a model followed the direction well.
+
 ## Choose your writing model
 
 **Manage Models** lets you select, download, update, or remove models. Downloads show a percentage beside the model name and a progress bar. Storage information helps you decide what to keep; deletion removes the model's installed files, older copies, and partial downloads without deleting your books.
 
 | Platform | Built-in choices |
 | --- | --- |
-| iPhone / iPad | Apple Intelligence; Qwen 3 0.6B and 1.7B; Llama 3.2 1B and 3B; Gemma 3 1B |
+| iPhone / iPad | Apple Intelligence; Qwen 3 0.6B, 1.7B and 4B Instruct; SmolLM3 3B; Llama 3.2 1B and 3B; Gemma 3 1B |
 | Compatible WebGPU browser | Qwen 3 0.6B and 1.7B; Llama 3.2 1B and 3B; SmolLM2 1.7B |
 
-Apple Intelligence requires a supported device with iOS 26 or later and the feature enabled. Its downloads are managed by iOS. Other local models need an initial download and sufficient storage and memory; larger models need more memory. Native installed models run locally without AI usage fees. Browser offline availability depends on retained caches. Apple controls Image Playground availability and usage limits.
+Apple Intelligence requires a supported device with iOS 26 or later and the feature enabled. Its downloads are managed by iOS. Other local models need an initial download and sufficient storage and memory; larger models need more memory. Quill requires at least 8 GB of device memory for SmolLM3 3B (about 1.8 GB download) and 12 GB for Qwen 3 4B Instruct (about 2.3 GB download). Native installed models run locally without AI usage fees. Browser offline availability depends on retained caches. Apple controls Image Playground availability and usage limits.
 
 **Connect a model API** supports OpenAI-compatible Chat Completions and Anthropic Messages. Supply a display name, HTTPS base URL, model ID, and optional API key, then save and test the connection. Compatible local servers can also be used. Other API formats require an adapter; browser connections require CORS support and may use HTTP localhost. Provider charges may apply.
 
 API connections are device settings, excluded from book backups and sync. iPhone keys use device-only Keychain storage; browser keys last for the tab session. API generation sends relevant story text to the server you choose. Keep Quill open during generation; backgrounding stops the workflow and retains saved partial text.
 
-Model updates install separately and become active only after loading successfully. A failed or cancelled update preserves the working version. New model architectures require app support. Built with Llama; models retain their respective [Llama](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct/blob/main/LICENSE.txt), [Gemma](https://ai.google.dev/gemma/terms), [Qwen](https://huggingface.co/Qwen/Qwen3-0.6B/blob/main/LICENSE), and [SmolLM2](https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B-Instruct/blob/main/LICENSE) terms.
+Model updates install separately and become active only after loading successfully. A failed or cancelled update preserves the working version. New model architectures require app support. Built with Llama; models retain their respective [Llama](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct/blob/main/LICENSE.txt), [Gemma](https://ai.google.dev/gemma/terms), [Qwen](https://huggingface.co/Qwen/Qwen3-0.6B/blob/main/LICENSE), [SmolLM3](https://huggingface.co/HuggingFaceTB/SmolLM3-3B/blob/main/LICENSE), and [SmolLM2](https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B-Instruct/blob/main/LICENSE) terms.
 
 ## Install on iPhone or iPad
 

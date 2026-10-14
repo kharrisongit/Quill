@@ -8,8 +8,8 @@ final class OnDeviceWriter {
     private let qwen=QwenWriter()
     func availability(model: String = "apple") -> [String: Any] {
         if QwenWriter.models.contains(model) {
-            guard QwenWriter.models.contains(model) else { return ["available":false,"message":"Choose a supported Qwen model."] }
-            let minimum: UInt64 = model == "llama-3b" ? 7_500_000_000 : ["qwen-1.7","smol-1.7"].contains(model) ? 5_000_000_000 : 3_000_000_000
+            // Leave room for KV cache, prefill and the editor alongside the downloaded weights.
+            let minimum: UInt64 = model == "qwen-4b-instruct" ? 11_000_000_000 : ["llama-3b","smol-3b"].contains(model) ? 7_500_000_000 : model == "qwen-1.7" ? 5_000_000_000 : 3_000_000_000
             guard ProcessInfo.processInfo.physicalMemory>=minimum else { return ["available":false,"message":"This model needs more memory than this device has. Try Qwen 0.6B or Apple Intelligence."] }
             return ["available":true,"message":"This model runs on this device. Download size and storage controls are in Manage Models. No account or usage charge. Once installed, it works offline."]
         }

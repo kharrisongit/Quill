@@ -8,11 +8,13 @@ import MLXLMCommon
 actor QwenWriter {
     private var container: ModelContainer?
     private var loadedKey: String?
-    static let models=["qwen-0.6","qwen-1.7","llama-1b","llama-3b","gemma-1b"]
+    static let models=["qwen-0.6","qwen-1.7","qwen-4b-instruct","smol-3b","llama-1b","llama-3b","gemma-1b"]
     private func repository(_ model: String) throws -> String {
         switch model {
         case "qwen-0.6": return "mlx-community/Qwen3-0.6B-4bit"
         case "qwen-1.7": return "mlx-community/Qwen3-1.7B-4bit"
+        case "qwen-4b-instruct": return "mlx-community/Qwen3-4B-Instruct-2507-4bit"
+        case "smol-3b": return "mlx-community/SmolLM3-3B-4bit"
         case "llama-1b": return "mlx-community/Llama-3.2-1B-Instruct-4bit"
         case "llama-3b": return "mlx-community/Llama-3.2-3B-Instruct-4bit"
         case "gemma-1b": return "mlx-community/gemma-3-1b-it-4bit"

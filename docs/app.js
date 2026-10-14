@@ -9,7 +9,7 @@ import {loadConnections,connections,saveConnection,deleteConnection} from './con
 import {uuid,union,heads,documents,revise,countWords,backup,fromBackup,purgeDraft,draftStorage,escapeXML as esc} from './core.js';
 import * as storage from './storage.js';
 import {sanitize,plain,manuscriptHTML,epub,docx} from './export.js';
-import {defaultBeatPrompt,chapterLengths,textToHTML,canUseDraft,buildChapterContext,generateChapter,generateChapterOutline,generateCodex,outlineLimit,generateBeat,revisePassage,analyzeManuscript,suggestAlternatives} from './ai.js';
+import {defaultBeatPrompt,chapterLengths,textToHTML,canUseDraft,buildChapterContext,generateChapter,generateChapterOutline,generateCodex,outlineLimit,generateBeat,revisePassage,hasPassageChange,analyzeManuscript,suggestAlternatives} from './ai.js';
 import {modelChoices,checkModel,createWriter,checkQwenUpdate,updateQwen,modelStorage,deleteModel} from './ai-runtime.js';
 const $=s=>document.querySelector(s), app=$('#app'), modal=$('#modal');
 // Keep page zoom fixed across the editor and dialogs; manuscript Text size remains available.
@@ -798,12 +798,13 @@ async function runWorkshopJob(kind,model,generate,field){
 }
 async function generateWritingTask(){
   captureWorkshop();await flushWorkshop();const d=workshopEdit.body,c=find(d.chapter);if(!c||c.deleted)throw Error('This manuscript section is no longer available.');
-  const beats=manuscriptBeats(c),at=beats.findIndex(b=>b.id===d.beatId),input={...workshopContext(c),beatInstructions:beatInstructions(),avoidPhrases:avoidedBeatPhrases(),beatPrompt:d.prompt,beatWords:Number($('#work-length')?.value||300),currentProse:plain(joinBeats(d.operation==='append'?beats:beats.slice(0,Math.max(0,at)))),plan:beats.map((b,i)=>`${i+1}. [${plain(b.html).trim()?'WRITTEN':b.id===d.beatId?'THIS BEAT':'UPCOMING'}] ${b.prompt||b.title}`).join('\n'),selectedText:d.selectedText,editPrompt:d.prompt,surrounding:plain(beats[at]?.html||'')};
+  const beats=manuscriptBeats(c),at=beats.findIndex(b=>b.id===d.beatId),input={...workshopContext(c),beatInstructions:beatInstructions(),avoidPhrases:avoidedBeatPhrases(),beatPrompt:d.prompt,beatWords:Number($('#work-length')?.value||300),currentProse:plain(joinBeats(d.operation==='append'?beats:beats.slice(0,Math.max(0,at)))),plan:beats.map((b,i)=>`${i+1}. [${plain(b.html).trim()?'WRITTEN':b.id===d.beatId?'THIS BEAT':'UPCOMING'}] ${b.prompt||b.title}`).join('\n'),selectedText:d.selectedText,editPrompt:d.prompt,surrounding:d.operation==='selection'?(()=>{const text=manuscriptText(beats[at]?.html||'').text;return text.slice(Math.max(0,d.selectionStart-350),d.selectionStart)+'\n[SELECTED PASSAGE]\n'+text.slice(d.selectionEnd,d.selectionEnd+320);})():''};
   if(['selection','edit-beat'].includes(d.operation)&&!d.prompt.trim())throw Error('Describe what the AI should change in this passage.');
   await runWorkshopJob('writing',$('#codex-model').value,options=>['selection','edit-beat'].includes(d.operation)?revisePassage(input,options):generateBeat(input,options),'#work-result');
 }
 async function applyWritingTask(){
   captureWorkshop();await flush();const d=workshopEdit.body,c=find(d.chapter),text=$('#work-result').value.trim();if(!text)throw Error('Generate or write a suggestion first.');
+  if(['selection','edit-beat'].includes(d.operation)&&!hasPassageChange(d.selectedText,text))throw Error('The suggestion is unchanged. Generate another revision or edit it before applying.');
   if(!canUseDraft(d,c))throw Error('This manuscript changed while the suggestion was open. Your suggestion is kept in Drafts; reopen it from the current writing to make a fresh edit.');
   const beats=manuscriptBeats(c),i=beats.findIndex(b=>b.id===d.beatId);
   if(d.operation==='append')beats.push({id:uuid(),title:'Beat '+(beats.length+1),prompt:d.prompt,html:textToHTML(text)});
