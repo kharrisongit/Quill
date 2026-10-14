@@ -115,3 +115,13 @@ Draft management is book-specific. It includes saved chapter outlines, generated
 IndexedDB applies markers and record removal in one transaction. Native files and sync folders write the marker before removing old checkpoints. Interrupted cleanup is completed at the next successful load/save/sync. A deletion marker is intentionally retained (a few hundred bytes) to suppress late offline edits and imports.
 
 `Tests/desk.cjs` covers the new navigation, cover upload/reload, book-scoped draft management, actual IndexedDB removal, stale writes, and manuscript protection. The simulator smoke check also verifies physical native draft-file cleanup. Motion follows the system preference and can be reduced in Settings.
+
+### Beat writing, book sections, and manuscript review
+
+The manuscript editor is the default writing surface. **Generate** opens a beat map; accepting it appends empty beats after existing prose. **Show beats** exposes separate editable regions with directions and one-beat generation/revision actions. **Hide beats** returns to continuous prose. The next-beat prompt remains on the writing page. Selection edits retain exact text offsets and the source chapter revision; changed, deleted, or conflicting manuscripts cannot be replaced by stale suggestions. Existing whole-chapter drafts remain available from Drafts for compatibility.
+
+Chapter records can carry validated `beats` (stable ID, title, prompt, HTML) and `sectionType`. Their flattened HTML must match their beat text exactly. This keeps existing exports and revision history compatible. Restoring older prose without beat metadata clears obsolete boundaries. All front/back matter uses this same storage and ordering, and a custom title page suppresses the automatic export title page.
+
+Codex scans read every nonempty manuscript section in bounded passages, then compare extracted evidence against the Codex. Long evidence is condensed for the selected model; the manuscript is never shortened or changed by a scan. Suggested additions require review. Known characters are matched by normalized name; existing details remain intact, blank fields may be filled, and other updates are appended to notes. Ambiguous duplicate names require deselection or cleanup. Plot-hole findings remain separate from canonical story context. Long scans can take many requests and API provider charges may apply.
+
+`Tests/workshop.cjs` exercises one-beat generation, exact selected-word replacement, retained adjacent writing, saved plans, failed saves, cancellation, concurrent-edit protection, front/back matter exports, reviewed Codex additions, character deduplication, plot-hole status, and icon coverage. `Tests/writing.test.mjs` checks the data invariants and bounded AI workflows.

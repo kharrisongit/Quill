@@ -10,6 +10,14 @@ export function validate(r) {
   if (!b || !['book','chapter','card'].includes(b.type) || typeof b.title !== 'string' || b.title.length > 1000 || typeof b.deleted !== 'boolean') throw Error('Invalid document.');
   if (b.type !== 'book' && !idOK(b.book)) throw Error('Invalid book reference.');
   for (const field of ['html','synopsis','author','category','status','color','plotBeats','writingStyle','prompt','outline','issue','model','role','age','appearance','personality','backstory','motivation','arc','relationships']) if (b[field] !== undefined && (typeof b[field] !== 'string' || b[field].length > 3000000)) throw Error('Invalid document text.');
+  if(b.sectionType!==undefined && (b.type!=='chapter'||typeof b.sectionType!=='string'||!['chapter','title-page','copyright','dedication','epigraph','contents','foreword','preface','introduction','prologue','interlude','epilogue','afterword','acknowledgments','appendix','glossary','bibliography','about-author','custom'].includes(b.sectionType)))throw Error('Invalid manuscript section.');
+  if(b.beats!==undefined){
+    if(b.type!=='chapter'||!Array.isArray(b.beats)||b.beats.length>500)throw Error('Invalid manuscript beats.');
+    const ids=new Set();for(const beat of b.beats){if(!beat||!idOK(beat.id)||ids.has(beat.id)||Object.keys(beat).some(k=>!['id','title','prompt','html'].includes(k))||['title','prompt','html'].some(k=>typeof beat[k]!=='string')||beat.title.length>1000||beat.prompt.length>6000||beat.html.length>3000000)throw Error('Invalid manuscript beat.');ids.add(beat.id);}
+    if(b.beats.map(beat=>beat.html).join('')!==(b.html||''))throw Error('Beat text must match its manuscript.');
+  }
+  for(const key of ['operation','beatId','selectedText','analysisKind','reviewSources','evidence','question','suggestion'])if(b[key]!==undefined&&(typeof b[key]!=='string'||b[key].length>300000))throw Error('Invalid writing task.');
+  for(const key of ['selectionStart','selectionEnd'])if(b[key]!==undefined&&(!Number.isSafeInteger(b[key])||b[key]<0))throw Error('Invalid selection.');
   if(b.portrait!==undefined && (typeof b.portrait!=='string' || b.portrait.length>700000 || (b.portrait && !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(b.portrait))))throw Error('Invalid character portrait.');
   for (const field of ['order','goal','dailyGoal','targetWords']) if (b[field] !== undefined && (!Number.isFinite(b[field]) || b[field] < 0)) throw Error('Invalid document number.');
   if (b.type === 'card' && b.category === 'Generated draft' && (!idOK(b.chapter) || !idOK(b.sourceRevision))) throw Error('Invalid generated draft reference.');
