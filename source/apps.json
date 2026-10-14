@@ -12,7 +12,7 @@
       "developerName": "kharrison",
       "subtitle": "A quiet place for your next novel",
       "localizedDescription": "Write and organize novels on iPhone and iPad. A focused formatted chapter editor, outline, character and place notes, word goals, spell check, saved revisions, and recoverable trash. Export Word documents, EPUB ebooks, formatted HTML, plain text, or print. Local autosave works offline. Connect a folder in iCloud Drive for optional sync while the app is open. Companion browser app: https://kharrisongit.github.io/Quill/. Desktop Chrome and Edge support shared-folder sync; other browsers can import and export backups. iOS 16 or later. Install with AltStore Classic.",
-      "iconURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.6/quill-icon.png",
+      "iconURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.7/quill-icon.png",
       "tintColor": "705B8B",
       "category": "productivity",
       "minOSVersion": "16.0",
@@ -25,6 +25,15 @@
         "privacy": {}
       },
       "versions": [
+        {
+          "version": "1.0.7",
+          "date": "2026-10-14T02:42:57Z",
+          "localizedDescription": "Your story’s Codex, and more choice over the models that write with you.\n\n- Open Codex inside a book for its story summary, plot beats, writing style and characters. Existing plot beats and character notes appear there automatically.\n- Build characters by hand or generate an editable suggestion using your selected writing model. Keep track of appearance, personality, backstory, motivation, relationships and character arcs.\n- Generate a character portrait with Apple Image Playground on supported devices, or upload your own image. Apple’s availability and usage limits apply. Portraits are saved with character revisions and backups.\n- Generate the next plot beat, edit it, and explicitly add it to the plot. Chapter outlines, prose, characters and beat suggestions all reference the Codex.\n- Manage Models shows downloads, installed space, update/download controls, and deletion of model files, older copies and partial downloads. Books and drafts are preserved.\n- Add Llama 3.2 1B/3B and Gemma 3 1B choices on iPhone/iPad alongside Apple Intelligence and Qwen. Compatible browsers also offer Llama and SmolLM2; Gemma is native-only in this release. Device memory requirements still apply.\n- Connect custom model APIs using OpenAI-compatible chat completions or Anthropic Messages. Enter a base URL, model ID and optional key; save, test, edit, select or remove each connection. iPhone keys use Keychain; browser keys last for the current tab session. Other API formats require an adapter.\n\nLocal writing has no usage fees. Optional APIs send relevant story context to your selected server and may incur provider charges. Apple Intelligence downloads are managed in iOS Settings. The chapter writer still requires review and approval of an editable outline before writing prose.",
+          "downloadURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.7/Quill.ipa",
+          "size": 6314525,
+          "minOSVersion": "16.0",
+          "buildVersion": "11"
+        },
         {
           "version": "1.0.6",
           "date": "2026-10-14T01:09:45Z",
@@ -89,14 +98,23 @@
           "buildVersion": "1"
         }
       ],
-      "version": "1.0.6",
-      "versionDate": "2026-10-14T01:09:45Z",
-      "versionDescription": "Shape your chapter before Quill writes it.\n\n- A full-screen chapter writer replaces the pop-up panel.\n- Generate an outline first, edit its events and ending, then choose Approve outline & write chapter. You can also write your own outline.\n- Outline edits autosave and remain available after reopening Quill. Every prose request receives the approved outline unchanged.\n- Fix the misleading story-context error on short prompts with empty plot beats by removing the hidden outline summarization loop. Long story-note errors now identify the relevant section.\n- Keep the writer open during outline creation, chapter writing and model downloads. Stop & keep draft preserves partial output.\n- Saved outlines and generated drafts remain separate from the manuscript, with previous versions preserved.\n\nIncludes Apple Intelligence and Qwen switching, full-book plot beats, and Qwen model update checks. This release keeps the existing model choices.",
-      "downloadURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.6/Quill.ipa",
-      "size": 6263513
+      "version": "1.0.7",
+      "versionDate": "2026-10-14T02:42:57Z",
+      "versionDescription": "Your story’s Codex, and more choice over the models that write with you.\n\n- Open Codex inside a book for its story summary, plot beats, writing style and characters. Existing plot beats and character notes appear there automatically.\n- Build characters by hand or generate an editable suggestion using your selected writing model. Keep track of appearance, personality, backstory, motivation, relationships and character arcs.\n- Generate a character portrait with Apple Image Playground on supported devices, or upload your own image. Apple’s availability and usage limits apply. Portraits are saved with character revisions and backups.\n- Generate the next plot beat, edit it, and explicitly add it to the plot. Chapter outlines, prose, characters and beat suggestions all reference the Codex.\n- Manage Models shows downloads, installed space, update/download controls, and deletion of model files, older copies and partial downloads. Books and drafts are preserved.\n- Add Llama 3.2 1B/3B and Gemma 3 1B choices on iPhone/iPad alongside Apple Intelligence and Qwen. Compatible browsers also offer Llama and SmolLM2; Gemma is native-only in this release. Device memory requirements still apply.\n- Connect custom model APIs using OpenAI-compatible chat completions or Anthropic Messages. Enter a base URL, model ID and optional key; save, test, edit, select or remove each connection. iPhone keys use Keychain; browser keys last for the current tab session. Other API formats require an adapter.\n\nLocal writing has no usage fees. Optional APIs send relevant story context to your selected server and may incur provider charges. Apple Intelligence downloads are managed in iOS Settings. The chapter writer still requires review and approval of an editable outline before writing prose.",
+      "downloadURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.7/Quill.ipa",
+      "size": 6314525
     }
   ],
   "news": [
+    {
+      "title": "Quill 1.0.7",
+      "identifier": "com.kharrison.quill.release-1.0.7",
+      "caption": "Open Codex inside a book for its story summary, plot beats, writing style and characters. Existing plot beats and cha…",
+      "date": "2026-10-14T02:42:57Z",
+      "tintColor": "705B8B",
+      "appID": "com.kharrison.quill",
+      "url": "https://github.com/kharrisongit/Quill/releases/tag/quill-1.0.7"
+    },
     {
       "title": "Quill 1.0.6",
       "identifier": "com.kharrison.quill.release-1.0.6",
