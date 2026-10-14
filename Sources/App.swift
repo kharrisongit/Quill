@@ -21,6 +21,8 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 
 final class WritingDesk: UIViewController, WKScriptMessageHandler, WKNavigationDelegate, UIDocumentPickerDelegate {
     var web: WKWebView!
+    private var lightStatusBar=false
+    override var preferredStatusBarStyle:UIStatusBarStyle { lightStatusBar ? .lightContent : .darkContent }
     let writer=OnDeviceWriter()
     let apiWriter=APIWriter()
     var portraitRequestID:String?
@@ -35,7 +37,7 @@ final class WritingDesk: UIViewController, WKScriptMessageHandler, WKNavigationD
     private var webRoot: URL { Bundle.main.bundleURL.appendingPathComponent("Web",isDirectory:true) }
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor=UIColor(red:0.97,green:0.96,blue:0.94,alpha:1)
+        view.backgroundColor=UIColor(red:0.95,green:0.93,blue:0.88,alpha:1)
         do {
             root=try files.url(for:.applicationSupportDirectory,in:.userDomainMask,appropriateFor:nil,create:true).appendingPathComponent("QuillRevisions",isDirectory:true)
             try files.createDirectory(at:root,withIntermediateDirectories:true)
@@ -55,9 +57,11 @@ final class WritingDesk: UIViewController, WKScriptMessageHandler, WKNavigationD
         web.navigationDelegate=self
         web.isOpaque=false;web.backgroundColor=view.backgroundColor
         web.scrollView.contentInsetAdjustmentBehavior = .never
+        web.scrollView.bounces=false;web.scrollView.alwaysBounceVertical=false
+        web.scrollView.backgroundColor=view.backgroundColor
         web.translatesAutoresizingMaskIntoConstraints=false
         view.addSubview(web)
-        NSLayoutConstraint.activate([web.topAnchor.constraint(equalTo:view.safeAreaLayoutGuide.topAnchor),web.bottomAnchor.constraint(equalTo:view.safeAreaLayoutGuide.bottomAnchor),web.leadingAnchor.constraint(equalTo:view.leadingAnchor),web.trailingAnchor.constraint(equalTo:view.trailingAnchor)])
+        NSLayoutConstraint.activate([web.topAnchor.constraint(equalTo:view.topAnchor),web.bottomAnchor.constraint(equalTo:view.bottomAnchor),web.leadingAnchor.constraint(equalTo:view.leadingAnchor),web.trailingAnchor.constraint(equalTo:view.trailingAnchor)])
         web.loadFileURL(webRoot.appendingPathComponent("index.html"),allowingReadAccessTo:webRoot)
     }
     func webView(_ webView:WKWebView,decidePolicyFor navigationAction:WKNavigationAction,decisionHandler:@escaping(WKNavigationActionPolicy)->Void) {
@@ -109,6 +113,12 @@ final class WritingDesk: UIViewController, WKScriptMessageHandler, WKNavigationD
         guard message.frameInfo.isMainFrame,let url=message.frameInfo.request.url,url.isFileURL,url.standardizedFileURL.path.hasPrefix(webRoot.standardizedFileURL.path+"/"),let data=message.body as? [String:Any],let id=data["id"] as? String,let action=data["action"] as? String else {return}
         let p=data["payload"] as? [String:Any] ?? [:]
         switch action {
+        case "appearance":
+            let dark=p["dark"] as? Bool ?? false
+            lightStatusBar=dark
+            let color=dark ? UIColor(red:0.063,green:0.129,blue:0.176,alpha:1) : UIColor(red:0.945,green:0.925,blue:0.875,alpha:1)
+            view.backgroundColor=color;web.backgroundColor=color;web.scrollView.backgroundColor=color
+            setNeedsStatusBarAppearanceUpdate();reply(id,true)
         case "portraitStatus": reply(id,portraitAvailable())
         case "portraitGenerate": presentPortrait(id:id,prompt:p["prompt"] as? String ?? "Fictional character portrait")
         case "apiProfiles": reply(id,apiWriter.list())

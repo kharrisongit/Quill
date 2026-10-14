@@ -64,6 +64,7 @@ jobs:
           node Tests/models.cjs
           node Tests/desk.cjs
           node Tests/workshop.cjs
+          node Tests/editing.cjs
       - name: Build IPA
         env:
           QUILL_VERSION: ${{ steps.release.outputs.version }}

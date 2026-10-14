@@ -14,19 +14,23 @@ Quill is a novel-writing workspace for **iPhone, iPad, and the browser**. Build 
 - Custom artwork, book-opening transitions, recognizable action icons, light and dark appearance, and reduced-motion support.
 - Settings covers shared preferences, model management, API connections, and backup/sync. Drafts belong to individual books.
 
+The open book shows **CODEX** and **WRITE!** on its page. Codex flips toward the front; Write flips toward the last edited section and restores your saved position. In the editor, Codex sits above the writing page. The sidebar contains book sections and practical book options.
+
 A small sample novel is included so you can explore immediately. Choose **New book** to start your own.
 
 ## Write at your own pace
 
-The normal manuscript editor is the default. Write freely with headings, bold, italic, underline, lists, quotations, scene breaks, undo/redo, focus mode, and platform spell checking. Organize sections with titles, synopses, status, reordering, manuscript search, word counts, and writing goals.
+The normal manuscript editor is the default. Write freely with headings, bold, italic, underline, lists, quotations, scene breaks, undo/redo, focus mode, and built-in offline English spell checking with suggestions and a personal dictionary. Organize sections with titles, synopses, status, reordering, Find & Replace for a section or the whole book, word counts, and writing goals.
+
+**Page break** inserts a visible divider at the cursor and creates a new page in Word, EPUB, and print/HTML exports (a form-feed in plain text). Find & Replace preserves formatting and beat boundaries. Spell Check works without an AI model or internet connection; remembered words stay on this device.
 
 When you want help:
 
 1. Choose **Generate** to open the chapter beat planner. Write a map yourself or ask your selected model for a suggestion, then edit the plan.
 2. Save the plan to add empty beats after your existing prose. Generate each beat individually when you're ready.
 3. Use **Show beats** to reveal editable blocks with their own directions, generation controls, and **Revise with AI** actions. **Hide beats** returns to continuous writing.
-4. Enter the next beat's prompt below the manuscript to generate right on the writing page, or add a blank beat and write it yourself.
-5. Select a word, sentence, or paragraph and choose **Edit selection with AI** for a focused change.
+4. Press **Generate next beat** below the manuscript to continue from the story and Codex. Add an optional description to steer it, or start a blank beat and write it yourself.
+5. Select a word, sentence, or paragraph and choose the **Edit with AI** pop-up above the selection for a focused change.
 
 Review generated text before applying it. Quill keeps saved drafts and revisions, preserves partial output when generation is stopped, and prevents stale suggestions from replacing writing that changed during a request. A prose request generates one beat at a time; it does not automatically continue through the chapter. Word targets are approximate.
 

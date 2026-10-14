@@ -41,14 +41,13 @@ const assert=require('node:assert/strict');
     // Tap the exposed manuscript area, closing the sidebar without intercepting the text interaction.
     await page.mouse.click(375,430);
     assert(!await page.locator('body').evaluate(el=>el.classList.contains('sidebar-open')));
-    await page.locator('[data-action="sidebar"]').click();
-    await page.locator('[data-view="plot"]').click();
+    await page.locator('[data-action="open-codex"]').click();
     await page.locator('[data-tab="beats"]').click();
     await page.locator('#plot-beats').fill('Opening: Mara finds a map.\nEnding: the lighthouse is her father’s home.');
     await page.locator('[data-tab="style"]').click();
     await page.locator('#writing-style').fill('Third person, past tense.');
     await page.evaluate(()=>window.quillFlush());
-    await page.reload();await openBook();await page.locator('[data-action="sidebar"]').click();await page.locator('[data-view="plot"]').click();
+    await page.reload();await openBook();await page.locator('[data-action="open-codex"]').click();
     await page.locator('[data-tab="beats"]').click();
     assert.match(await page.locator('#plot-beats').inputValue(),/lighthouse/);
     await page.screenshot({path:process.env.QUILL_UI_SCREENSHOT||'/tmp/quill-plot-test.png'});
@@ -61,7 +60,7 @@ const assert=require('node:assert/strict');
     const bounds=await page.locator('#modal').boundingBox();assert.deepEqual(bounds,{x:0,y:0,width:390,height:844});
     await page.locator('[aria-label="Back to manuscript"]').click();await page.waitForFunction(()=>!document.querySelector('#modal').open);
     // Codex migration, manual and generated characters, portrait persistence, and reviewed beats.
-    await page.locator('[data-action="sidebar"]').click();await page.locator('[data-view="plot"]').click();await page.locator('[data-tab="summary"]').click();
+    await page.locator('[data-action="open-codex"]').click();await page.locator('[data-tab="summary"]').click();
     await page.locator('#story-summary').fill('A city built on a sleeping whale.');await page.locator('[data-tab="characters"]').click();
     assert.equal(await page.locator('.character-card').count(),1); // Existing Character cards appear immediately.
     await page.locator('[data-action="new-character"]').click();await page.locator('#character-title').fill('Neri');await page.locator('#character-appearance').fill('Silver eyes');await page.locator('#character-motivation').fill('Find her brother');
@@ -69,7 +68,7 @@ const assert=require('node:assert/strict');
     await page.locator('#character-form [data-action="close"]').click();await page.waitForFunction(()=>!document.querySelector('#modal').open);
     await page.waitForFunction(()=>document.querySelectorAll('.character-card').length===2);
     assert.equal(await page.locator('.character-card').count(),2);
-    await page.reload();await openBook();await page.locator('[data-action="sidebar"]').click();await page.locator('[data-view="plot"]').click();
+    await page.reload();await openBook();await page.locator('[data-action="open-codex"]').click();
     assert.equal(await page.locator('#story-summary').inputValue(),'A city built on a sleeping whale.');await page.locator('[data-tab="characters"]').click();
     await page.locator('.character-card').filter({hasText:'Neri'}).click();assert.equal(await page.locator('#character-appearance').inputValue(),'Silver eyes');assert(await page.locator('#character-portrait').isVisible());
     await page.locator('.character-ai summary').click();await page.locator('#codex-model').selectOption('llama-1b');await page.locator('[data-action="generate-codex"]').click();
