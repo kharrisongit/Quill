@@ -8,6 +8,18 @@ const path=require('node:path');
   const settled=()=>page.locator('.scene-curtain').waitFor({state:'detached'});
   const click=async selector=>{await page.locator(selector).click();await settled();};
   const noOverflow=async()=>assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+  const readable=async selector=>{
+   const result=await page.locator(selector).first().evaluate(el=>{
+    const rgb=value=>(value.match(/[\d.]+/g)||[]).map(Number);
+    const luminance=channels=>channels.slice(0,3).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4}).reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
+    const foreground=rgb(getComputedStyle(el).color);let background;
+    for(let node=el;node;node=node.parentElement){const c=rgb(getComputedStyle(node).backgroundColor);if(c.length===3||c[3]===1){background=c;break;}}
+    if(!background)throw Error('Contrast check needs an opaque surface');
+    const a=luminance(foreground),b=luminance(background);
+    return {ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05),foreground,background,text:(el.innerText||el.value||el.getAttribute('aria-label')||'').slice(0,60)};
+   });
+   assert(result.ratio>=4.5,`${selector}: unreadable text ${JSON.stringify(result)}`);
+  };
   await page.goto(process.env.QUILL_TEST_URL||'http://127.0.0.1:8088',{waitUntil:'domcontentloaded'});
   await page.locator('[data-action="bookshelf"]').waitFor();await noOverflow();
   await page.screenshot({path:'/tmp/quill-start-test.png'});
@@ -70,7 +82,18 @@ const path=require('node:path');
   await click('[data-action="enter-write"]');assert.match(await page.locator('#editor').innerText(),/must survive/);
   await page.screenshot({path:'/tmp/quill-writing-test.png'});
   await page.setViewportSize({width:1280,height:900});await click('[data-action="home"]');await noOverflow();await page.screenshot({path:'/tmp/quill-desktop-test.png'});
-  await page.emulateMedia({reducedMotion:'reduce'});await click('[data-action="start-screen"]');await click('[data-action="settings"]');await page.locator('[data-action="theme"]').click();assert(await page.locator('body').evaluate(e=>e.classList.contains('dark')));await page.locator('#modal [data-action="close"]').click();await page.waitForFunction(()=>!document.querySelector('#modal').open);await click('[data-action="bookshelf"]');await noOverflow();
+  await page.setViewportSize({width:390,height:844});await page.emulateMedia({reducedMotion:'reduce'});await click('[data-action="start-screen"]');await click('[data-action="settings"]');await page.locator('[data-action="theme"]').click();assert(await page.locator('body').evaluate(e=>e.classList.contains('dark')));
+  await readable('#modal [data-action="connect"]');await readable('#modal [data-action="theme"]');await readable('.settings-section p');
+  await page.locator('[data-action="manage-models"]').click();await readable('.model-heading strong');await readable('.model-row .btn:not(:disabled)');
+  await page.locator('#modal [data-action="close"]').click();await page.waitForFunction(()=>!document.querySelector('#modal').open);await click('[data-action="bookshelf"]');await noOverflow();
+  await readable('body');await readable('.shelf-heading h1');await readable('.shelf-heading .btn');await readable('.shelf-book h3');
+  await page.screenshot({path:'/tmp/quill-dark-shelf-test.png'});
+  await click('.shelf-book:has-text("The Star Orchard")');await readable('.book-door-tools .btn');await page.screenshot({path:'/tmp/quill-dark-book-test.png'});
+  await click('[data-action="enter-write"]');await readable('.toolbar button');await readable('[data-action="toggle-beats"]');await readable('[data-action="write-ai"]');await readable('#editor');await readable('#next-writing-prompt');await readable('.inline-next h3');
+  await page.screenshot({path:'/tmp/quill-dark-writing-test.png'});
+  await page.locator('[data-action="write-ai"]').click();await readable('.ai-heading h1');await readable('.ai-section label');await readable('.ai-modal .btn:not(:disabled)');await page.screenshot({path:'/tmp/quill-dark-planner-test.png'});
+  await page.reload();await page.locator('[data-action="bookshelf"]').waitFor();assert(await page.locator('body').evaluate(e=>e.classList.contains('dark')));await click('[data-action="bookshelf"]');await click('.shelf-book:has-text("The Star Orchard")');await click('[data-action="enter-codex"]');
+  await readable('[data-action="scan-codex"]');await readable('.codex-tabs .primary');await readable('.codex-tabs .subtle');await readable('#story-summary');await page.screenshot({path:'/tmp/quill-dark-codex-test.png'});
   assert.deepEqual(errors,[]);console.log('PASS: opening navigation, animated shelf and book menu, uploaded covers persist, book-scoped draft review/cancel/bulk cleanup, real IndexedDB byte removal and stale write suppression, manuscript and other-book protection, responsive layouts and dark/reduced-motion navigation.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1)});
