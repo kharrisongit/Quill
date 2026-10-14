@@ -12,6 +12,7 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
     }
     func applicationDidEnterBackground(_ application: UIApplication) {
         (window?.rootViewController as? WritingDesk)?.writer.cancel()
+        (window?.rootViewController as? WritingDesk)?.apiWriter.cancel()
     }
     func applicationWillResignActive(_ application: UIApplication) {
         (window?.rootViewController as? WritingDesk)?.web.evaluateJavaScript("window.quillFlush && window.quillFlush()", completionHandler:nil)
@@ -21,6 +22,8 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 final class WritingDesk: UIViewController, WKScriptMessageHandler, WKNavigationDelegate, UIDocumentPickerDelegate {
     var web: WKWebView!
     let writer=OnDeviceWriter()
+    let apiWriter=APIWriter()
+    var portraitRequestID:String?
     private let io=DispatchQueue(label:"com.kharrison.quill.files",qos:.userInitiated)
     private var root: URL!
     private var folder: URL?
@@ -101,6 +104,15 @@ final class WritingDesk: UIViewController, WKScriptMessageHandler, WKNavigationD
         guard message.frameInfo.isMainFrame,let url=message.frameInfo.request.url,url.isFileURL,url.standardizedFileURL.path.hasPrefix(webRoot.standardizedFileURL.path+"/"),let data=message.body as? [String:Any],let id=data["id"] as? String,let action=data["action"] as? String else {return}
         let p=data["payload"] as? [String:Any] ?? [:]
         switch action {
+        case "portraitStatus": reply(id,portraitAvailable())
+        case "portraitGenerate": presentPortrait(id:id,prompt:p["prompt"] as? String ?? "Fictional character portrait")
+        case "apiProfiles": reply(id,apiWriter.list())
+        case "apiSave": do{try apiWriter.save(p);reply(id,true)}catch{reply(id,error:error.localizedDescription)}
+        case "apiDelete": do{try apiWriter.delete(p["id"] as? String ?? "");reply(id,true)}catch{reply(id,error:error.localizedDescription)}
+        case "apiCancel": apiWriter.cancel();reply(id,true)
+        case "apiGenerate": apiWriter.generate(p,finish:{[weak self] text,error in self?.reply(id,text as Any? ?? NSNull(),error:error)})
+        case "aiModels": writer.modelStorage(finish:{[weak self] rows,error in self?.reply(id,rows as Any? ?? NSNull(),error:error)})
+        case "aiDeleteModel": writer.deleteModel(p["model"] as? String ?? "",finish:{[weak self] error in self?.reply(id,error==nil,error:error)})
         case "aiStatus": reply(id,writer.availability(model:p["model"] as? String ?? "apple"))
         case "aiCheckUpdate": writer.checkUpdate(model:p["model"] as? String ?? "",finish:{[weak self] result,error in self?.reply(id,result as Any? ?? NSNull(),error:error)})
         case "aiUpdate": writer.update(model:p["model"] as? String ?? "",status:{[weak self] text in self?.writerProgress(id,status:text)},finish:{[weak self] result,error in self?.reply(id,result as Any? ?? NSNull(),error:error)})

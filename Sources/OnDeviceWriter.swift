@@ -7,12 +7,13 @@ final class OnDeviceWriter {
     private var task: Task<Void, Never>?
     private let qwen=QwenWriter()
     func availability(model: String = "apple") -> [String: Any] {
-        if model.hasPrefix("qwen-") {
-            guard ["qwen-0.6","qwen-1.7"].contains(model) else { return ["available":false,"message":"Choose a supported Qwen model."] }
-            let minimum: UInt64 = model == "qwen-1.7" ? 5_000_000_000 : 2_500_000_000
+        if QwenWriter.models.contains(model) {
+            guard QwenWriter.models.contains(model) else { return ["available":false,"message":"Choose a supported Qwen model."] }
+            let minimum: UInt64 = model == "llama-3b" ? 7_500_000_000 : ["qwen-1.7","smol-1.7"].contains(model) ? 5_000_000_000 : 3_000_000_000
             guard ProcessInfo.processInfo.physicalMemory>=minimum else { return ["available":false,"message":"This model needs more memory than this device has. Try Qwen 0.6B or Apple Intelligence."] }
-            return ["available":true,"message":"Qwen runs on this device. First use downloads roughly \(model == "qwen-1.7" ? "1 GB" : "400 MB"). No account or usage charge. Once installed, it works offline."]
+            return ["available":true,"message":"This model runs on this device. Download size and storage controls are in Manage Models. No account or usage charge. Once installed, it works offline."]
         }
+        guard model=="apple" else {return ["available":false,"message":"Choose a supported model in Manage Models."]}
         guard #available(iOS 26.0, *) else {
             return ["available": false, "message": "Apple Intelligence needs iOS 26 or later on a supported device. Choose Qwen to try local writing on this device."]
         }
@@ -35,15 +36,25 @@ final class OnDeviceWriter {
     func update(model:String,status:@escaping(String)->Void,finish:@escaping(String?,String?)->Void) {
         guard task == nil else {finish(nil,"Stop the current writing job first.");return}
         let state=availability(model:model)
-        guard model.hasPrefix("qwen-"),state["available"] as? Bool == true else {finish(nil,state["message"] as? String ?? "Choose a Qwen model.");return}
+        guard QwenWriter.models.contains(model),state["available"] as? Bool == true else {finish(nil,state["message"] as? String ?? "Choose a downloadable model.");return}
         UIApplication.shared.isIdleTimerDisabled=true
         task=Task { [weak self] in
             defer { self?.task=nil;UIApplication.shared.isIdleTimerDisabled=false }
             do {
                 guard let self else {throw CancellationError()}
                 _=try await self.qwen.load(model,update:true,status:{ text in Task { @MainActor in status(text) } })
-                try Task.checkCancellation();finish("Qwen is installed and up to date.",nil)
-            } catch {finish(nil,Task.isCancelled ? "Download stopped. Your installed Qwen version is kept." : error.localizedDescription)}
+                try Task.checkCancellation();finish("The model is installed and up to date.",nil)
+            } catch {finish(nil,Task.isCancelled ? "Download stopped. Your installed model version is kept." : error.localizedDescription)}
+        }
+    }
+    func modelStorage(finish:@escaping([[String:Any]]?,String?)->Void){
+        Task{do{finish(try await qwen.storage(),nil)}catch{finish(nil,error.localizedDescription)}}
+    }
+    func deleteModel(_ model:String,finish:@escaping(String?)->Void){
+        guard task==nil else {finish("Stop writing or downloading before deleting a model.");return}
+        task=Task{[weak self] in
+            defer{self?.task=nil}
+            do{try await self?.qwen.delete(model);finish(nil)}catch{finish(error.localizedDescription)}
         }
     }
     func cancel() { task?.cancel() }
@@ -63,7 +74,7 @@ final class OnDeviceWriter {
             do {
                 try Task.checkCancellation()
                 guard let self else { throw CancellationError() }
-                if model.hasPrefix("qwen-") {
+                if QwenWriter.models.contains(model) {
                     let text=try await self.qwen.generate(model:model,instructions:instructions,prompt:prompt,maxTokens:maxTokens,status:{ text in Task { @MainActor in status(text) } },progress:{ text in Task { @MainActor in progress(text) } })
                     try Task.checkCancellation();finish(text,nil);return
                 }

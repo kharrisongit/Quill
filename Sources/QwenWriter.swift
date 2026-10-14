@@ -8,11 +8,15 @@ import MLXLMCommon
 actor QwenWriter {
     private var container: ModelContainer?
     private var loadedKey: String?
+    static let models=["qwen-0.6","qwen-1.7","llama-1b","llama-3b","gemma-1b"]
     private func repository(_ model: String) throws -> String {
         switch model {
         case "qwen-0.6": return "mlx-community/Qwen3-0.6B-4bit"
         case "qwen-1.7": return "mlx-community/Qwen3-1.7B-4bit"
-        default: throw problem("Choose a supported Qwen model.")
+        case "llama-1b": return "mlx-community/Llama-3.2-1B-Instruct-4bit"
+        case "llama-3b": return "mlx-community/Llama-3.2-3B-Instruct-4bit"
+        case "gemma-1b": return "mlx-community/gemma-3-1b-it-4bit"
+        default: throw problem("Choose a supported local model.")
         }
     }
     private func problem(_ message: String) -> NSError { NSError(domain:"Quill.Qwen",code:1,userInfo:[NSLocalizedDescriptionKey:message]) }
@@ -32,14 +36,14 @@ actor QwenWriter {
         guard (response as? HTTPURLResponse)?.statusCode == 200,
               let object=try JSONSerialization.jsonObject(with:data) as? [String:Any],let sha=object["sha"] as? String,
               sha.range(of:"^[a-f0-9]{40}$",options:.regularExpression) != nil else {
-            throw problem("Could not check Qwen’s model repository. Your installed version is kept.")
+            throw problem("Could not check the model repository. Your installed version is kept.")
         }
         return sha
     }
     func checkUpdate(_ model: String) async throws -> [String:Any] {
         let newest=try await latest(model),installed=savedRevision(model)
         return ["available":installed != newest,"installed":installed ?? "","latest":newest,
-                "message":installed == newest ? "This Qwen model is up to date (\(newest.prefix(8)))." : installed == nil ? "Qwen is ready for its first download." : "A Qwen model update is available (\(newest.prefix(8))). Your working version stays installed until the update succeeds."]
+                "message":installed == newest ? "This local model is up to date (\(newest.prefix(8)))." : installed == nil ? "The model is ready for its first download." : "A local model update is available (\(newest.prefix(8))). Your working version stays installed until the update succeeds."]
     }
     func load(_ model: String, update: Bool = false, status: @escaping @Sendable (String) -> Void) async throws -> ModelContainer {
         let repo=try repository(model),installed=savedRevision(model)
@@ -52,20 +56,40 @@ actor QwenWriter {
         container=nil;loadedKey=nil;GPU.set(cacheLimit:16*1024*1024);GPU.clearCache()
         let config: ModelConfiguration
         if revision == installed && FileManager.default.fileExists(atPath:folder.appendingPathComponent("config.json").path) {
-            status("Loading installed Qwen model…");config=ModelConfiguration(directory:folder)
+            status("Loading installed local model…");config=ModelConfiguration(directory:folder)
         } else {
-            status("Downloading Qwen · keep Quill open…")
+            status("Downloading model · keep Quill open…")
             config=ModelConfiguration(id:repo,revision:revision)
         }
         try Task.checkCancellation()
         let loaded=try await LLMModelFactory.shared.loadContainer(hub:hub,configuration:config,progressHandler:{ progress in
-            status("Downloading Qwen · \(Int(progress.fractionCompleted*100))%")
+            status("Downloading model · \(Int(progress.fractionCompleted*100))%")
         })
         try Task.checkCancellation()
         container=loaded;loadedKey=key
         UserDefaults.standard.set(revision,forKey:"QwenRevision-"+model)
-        status("Qwen ready · version \(revision.prefix(8))")
+        status("Model ready · version \(revision.prefix(8))")
         return loaded
+    }
+    private func modelFolder(_ model:String)throws -> URL {
+        _=try repository(model)
+        return try FileManager.default.url(for:.applicationSupportDirectory,in:.userDomainMask,appropriateFor:nil,create:true).appendingPathComponent("QuillModels").appendingPathComponent(model)
+    }
+    func storage()throws -> [[String:Any]] {
+        try Self.models.map { model in
+            let folder=try modelFolder(model)
+            let keys:Set<URLResourceKey>=[.isRegularFileKey,.fileAllocatedSizeKey,.fileSizeKey]
+            let items=FileManager.default.enumerator(at:folder,includingPropertiesForKeys:Array(keys))
+            var bytes=0
+            while let url=items?.nextObject() as? URL {let v=try url.resourceValues(forKeys:keys);if v.isRegularFile==true {bytes+=v.fileAllocatedSize ?? v.fileSize ?? 0}}
+            return ["id":model,"bytes":bytes,"installed":savedRevision(model) != nil && bytes>0,"partial":savedRevision(model)==nil && bytes>0]
+        }
+    }
+    func delete(_ model:String)throws {
+        let folder=try modelFolder(model)
+        release()
+        if FileManager.default.fileExists(atPath:folder.path){try FileManager.default.removeItem(at:folder)}
+        UserDefaults.standard.removeObject(forKey:"QwenRevision-"+model)
     }
     func release() { container=nil;loadedKey=nil;GPU.clearCache() }
     func generate(model: String, instructions: String, prompt: String, maxTokens: Int,

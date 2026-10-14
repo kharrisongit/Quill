@@ -41,6 +41,8 @@ targets:
         product: MLX
       - package: Transformers
         product: Hub
+      - sdk: ImagePlayground.framework
+        weak: true
       - sdk: FoundationModels.framework
         weak: true
 schemes:

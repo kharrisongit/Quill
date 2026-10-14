@@ -1,3 +1,4 @@
+import {characterContext} from './codex.js';
 import {countWords,escapeXML} from './core.js';
 
 export const chapterLengths = [500,1000,1500,2000,3000];
@@ -19,8 +20,8 @@ export function buildChapterContext(book, chapter, chapters, notes, plain) {
   const previous=chapters.slice(0,index);
   return {
     title:chapter.title, number:index+1,
-    plot:book.plotBeats||'', style:book.writingStyle||'',
-    notes:notes.map(n=>`${n.category||'Note'}: ${n.title}\n${plain(n.html)}`).join('\n\n'),
+    summary:book.synopsis||'', plot:book.plotBeats||'', style:book.writingStyle||'',
+    notes:notes.map(n=>`${n.category||'Note'}: ${n.category==='Character'?characterContext(n,plain):n.title+'\n'+plain(n.html||'')}`).join('\n\n'),
     earlier:previous.map((c,i)=>`Chapter ${i+1}: ${c.title}\n${c.synopsis||'(No synopsis)'}`).join('\n\n'),
     previousEnding:previous.length?plain(previous.at(-1).html).slice(-1800):''
   };
@@ -40,7 +41,7 @@ function writerSession({request,signal}) {
 async function prepareChapter(input,{ask,onStatus}) {
   const target=Number(input.targetWords);
   if(!chapterLengths.includes(target)||!input.prompt?.trim())throw Error('Add a chapter prompt and choose a chapter length.');
-  if([input.plot,input.notes,input.earlier].some(s=>String(s||'').length>300000))throw Error('The story context is too large for one on-device job. Shorten the plot or story notes.');
+  if([input.summary,input.plot,input.notes,input.earlier,input.style,input.prompt].some(s=>String(s||'').length>300000))throw Error('The story context is too large for one on-device job. Shorten the plot or story notes.');
   const compact=async(text,budget,label)=>{
     let value=String(text||'').trim();if(value.length<=budget)return value;
     const tooLong=()=>Error(`The writer could not condense your ${label} to fit. Try shortening that section or choose another writing model.`);
@@ -60,12 +61,13 @@ async function prepareChapter(input,{ask,onStatus}) {
     if(value.length>budget)throw tooLong();
     return value;
   };
-  const plot=await compact(input.plot,1500,'plot beats');
-  const notes=await compact(input.notes,850,'story notes');
+  const summary=await compact(input.summary,500,'story summary');
+  const plot=await compact(input.plot,1300,'plot beats');
+  const notes=await compact(input.notes,1100,'story notes');
   const earlier=await compact(input.earlier,750,'earlier chapter synopses');
   const prompt=await compact(input.prompt,1400,'chapter instructions');
   const style=await compact(input.style,500,'writing preferences');
-  const context=`CHAPTER ${input.number}: ${input.title.slice(0,200)}\nCHAPTER REQUEST: ${prompt}\nWRITING PREFERENCES: ${style||'Follow the prompt and recent prose.'}\nWHOLE-BOOK PLOT (future events are context, not events to include now):\n${plot||'No overall plot supplied.'}\nSTORY NOTES:\n${notes}\nEARLIER CHAPTERS:\n${earlier}`;
+  const context=`CHAPTER ${input.number}: ${input.title.slice(0,200)}\nCHAPTER REQUEST: ${prompt}\nWRITING PREFERENCES: ${style||'Follow the prompt and recent prose.'}\nCODEX STORY SUMMARY:\n${summary||'No summary supplied.'}\nWHOLE-BOOK PLOT (future events are context, not events to include now):\n${plot||'No overall plot supplied.'}\nSTORY NOTES:\n${notes}\nEARLIER CHAPTERS:\n${earlier}`;
   return {context,target,parts:Math.ceil(target/400)};
 }
 // This step only proposes an outline. The UI saves it and waits for the user's approval.
@@ -93,4 +95,12 @@ export async function generateChapter(input,options) {
     completed=prefix+text;onText(completed);
   }
   check();onStatus(`Draft ready · ${countWords(completed).toLocaleString()} words`);return completed;
+}
+
+// Character and next-beat suggestions use the same bounded Codex context as chapter writing.
+export async function generateCodex(kind,input,options){
+  const {ask}=writerSession(options),onStatus=options.onStatus||(()=>{});
+  const {context}=await prepareChapter({...input,number:input.number||1,title:input.title||'Codex',targetWords:500,prompt:input.prompt||'Help develop this story.'},{ask,onStatus});
+  if(kind==='character')return ask('Create one fictional character consistent with the book Codex. Preserve any existing details supplied by the author. Return only a JSON object with string fields: name, role, age, appearance, personality, backstory, motivation, arc, relationships. Keep each field to one or two short sentences.',context+'\nCreate a character for this story. Avoid duplicating existing characters unless the author requests it.',900,options.onText);
+  return ask('Help a novelist move the story forward. Use the Codex as story reference. Suggest exactly one next plot beat following the last listed beat. Respect established facts, character motivations, tone, chronology and the intended ending. Return the beat only, in 2–4 sentences; no introduction.',context+'\nSuggest the next beat. This is a proposal the author will edit before adding it to the plot.',350,options.onText);
 }

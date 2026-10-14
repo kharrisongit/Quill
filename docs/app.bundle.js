@@ -9,7 +9,8 @@ function validate(r) {
   const b = r.body;
   if (!b || !['book','chapter','card'].includes(b.type) || typeof b.title !== 'string' || b.title.length > 1000 || typeof b.deleted !== 'boolean') throw Error('Invalid document.');
   if (b.type !== 'book' && !idOK(b.book)) throw Error('Invalid book reference.');
-  for (const field of ['html','synopsis','author','category','status','color','plotBeats','writingStyle','prompt','outline','issue','model']) if (b[field] !== undefined && (typeof b[field] !== 'string' || b[field].length > 3000000)) throw Error('Invalid document text.');
+  for (const field of ['html','synopsis','author','category','status','color','plotBeats','writingStyle','prompt','outline','issue','model','role','age','appearance','personality','backstory','motivation','arc','relationships']) if (b[field] !== undefined && (typeof b[field] !== 'string' || b[field].length > 3000000)) throw Error('Invalid document text.');
+  if(b.portrait!==undefined && (typeof b.portrait!=='string' || b.portrait.length>700000 || (b.portrait && !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(b.portrait))))throw Error('Invalid character portrait.');
   for (const field of ['order','goal','dailyGoal','targetWords']) if (b[field] !== undefined && (!Number.isFinite(b[field]) || b[field] < 0)) throw Error('Invalid document number.');
   if (b.type === 'card' && b.category === 'Generated draft' && (!idOK(b.chapter) || !idOK(b.sourceRevision))) throw Error('Invalid generated draft reference.');
   if (JSON.stringify(r).length > 4000000) throw Error('A chapter exceeds the 4 MB limit. Split it into smaller chapters.');
@@ -154,8 +155,107 @@ function docx(book,chapters){
 }
 return {sanitize,plain,manuscriptHTML,epub,docx};
 })();
+const QuillCodex = (() => {
+
+const characterFields=[['role','Story role'],['age','Age'],['appearance','Appearance'],['personality','Personality & voice'],['backstory','Backstory'],['motivation','Wants, needs & fears'],['arc','Character arc'],['relationships','Relationships']];
+function characterContext(card,plain){return [card.title,...characterFields.filter(([key])=>card[key]).map(([key,label])=>label+': '+card[key]),plain(card.html||'')].join('\n');}
+function parseCharacter(text){
+  const cleaned=String(text).replace(/^\s*```(?:json)?\s*/i,'').replace(/\s*```\s*$/,'').trim();
+  const start=cleaned.indexOf('{'),end=cleaned.lastIndexOf('}');let data;
+  try{data=JSON.parse(cleaned.slice(start,end+1));}catch{throw Error('The model returned an unstructured character. Your existing details are kept; copy the suggestion below or try again.');}
+  if(!data||typeof data.name!=='string'||!data.name.trim())throw Error('The character needs a name. Edit the suggestion or try again.');
+  const result={title:data.name.trim().slice(0,1000)};
+  for(const [key] of characterFields){if(data[key]!==undefined&&typeof data[key]!=='string')throw Error('The model returned invalid character details. Try again.');result[key]=(data[key]||'').slice(0,6000);}
+  return result;
+}
+function portraitPrompt(card){return `Portrait of a fictional story character. ${card.title||''}. ${card.age?'Age: '+card.age+'. ':''}${card.appearance||''}. ${card.role||''}. ${card.personality||''}. Book illustration, no text.`.slice(0,1800);}
+return {characterFields,characterContext,parseCharacter,portraitPrompt};
+})();
+const QuillModels = (() => {
+
+// IDs remain stable across app updates and are separate from manuscript storage.
+const localModels = [
+  {id:'qwen-1.7',name:'Qwen 3 · 1.7B',size:'1 GB',web:'Qwen3-1.7B',description:'Balanced local writing'},
+  {id:'qwen-0.6',name:'Qwen 3 · 0.6B',size:'400 MB',web:'Qwen3-0.6B',description:'Smallest download'},
+  {id:'llama-1b',name:'Llama 3.2 · 1B',size:'700 MB',web:'Llama-3.2-1B-Instruct',description:'Compact alternative'},
+  {id:'llama-3b',name:'Llama 3.2 · 3B',size:'1.8 GB',web:'Llama-3.2-3B-Instruct',description:'Larger model · needs more memory'},
+  {id:'smol-1.7',native:false,name:'SmolLM2 · 1.7B',size:'1 GB',web:'SmolLM2-1.7B-Instruct',description:'Available in compatible browsers'},
+  {id:'gemma-1b',name:'Gemma 3 · 1B',size:'800 MB',web:null,description:'Available in the iPhone/iPad app'}
+];
+function isLocalModel(id){return localModels.some(m=>m.id===id);}
+function validateConnection(raw){
+  const name=String(raw.name||'').trim(),model=String(raw.model||'').trim();
+  if(!name||name.length>100||!model||model.length>200)throw Error('Enter a connection name and model ID.');
+  let url;try{url=new URL(String(raw.endpoint||'').trim());}catch{throw Error('Enter a complete API base URL.');}
+  const local=['localhost','127.0.0.1','[::1]'].includes(url.hostname);
+  if((url.protocol!=='https:'&&!(local&&url.protocol==='http:'))||url.username||url.password||url.search||url.hash)throw Error('Use an HTTPS API base URL without credentials or query parameters. Localhost may use HTTP.');
+  if(!['openai','anthropic'].includes(raw.format))throw Error('Choose a supported API format.');
+  const suffix=raw.format==='anthropic'?'/messages':'/chat/completions';
+  let endpoint=url.href.replace(/\/+$/,'');if(endpoint.endsWith(suffix))endpoint=endpoint.slice(0,-suffix.length);
+  const id=raw.id||'api-'+crypto.randomUUID();if(!/^api-[a-zA-Z0-9-]{1,80}$/.test(id))throw Error('Invalid connection ID.');
+  return {id,name,model,endpoint,format:raw.format};
+}
+function apiRequest(profile,{instructions,prompt,maxTokens}){
+  const anthropic=profile.format==='anthropic';
+  return {url:profile.endpoint+(anthropic?'/messages':'/chat/completions'),body:anthropic?
+    {model:profile.model,system:instructions,messages:[{role:'user',content:prompt}],max_tokens:maxTokens,stream:false}:
+    {model:profile.model,messages:[{role:'system',content:instructions},{role:'user',content:prompt}],max_tokens:maxTokens,stream:false}};
+}
+function apiText(profile,data){
+  const content=profile.format==='anthropic'?data.content:data.choices?.[0]?.message?.content;
+  const text=Array.isArray(content)?content.filter(x=>x.type==='text').map(x=>x.text).join('\n'):content;
+  if(typeof text!=='string'||!text.trim())throw Error('The API returned no text. Check the model ID and API format.');
+  return text.trim();
+}
+return {localModels,isLocalModel,validateConnection,apiRequest,apiText};
+})();
+const QuillConnections = (() => {
+const {native,bridge}=QuillStorage; const {validateConnection,apiRequest,apiText}=QuillModels;
+let profiles=[];
+const KEY='quill-api-connections';
+async function loadConnections(){
+  const raw=native?await bridge('apiProfiles'):JSON.parse(localStorage.getItem(KEY)||'[]');
+  profiles=raw.map(p=>({...validateConnection(p),hasKey:!!p.hasKey}));return profiles;
+}
+function connections(){return profiles;}
+async function saveConnection(raw,key,clearKey=false){
+  const p=validateConnection(raw);
+  if(native)await bridge('apiSave',{profile:p,key,clearKey});
+  else{
+    // Browser keys last only for this tab session, never in backups or localStorage.
+    const keyName='quill-api-key-'+p.id;
+    if(key)sessionStorage.setItem(keyName,key);else if(clearKey||profiles.find(x=>x.id===p.id)?.endpoint!==p.endpoint)sessionStorage.removeItem(keyName);
+    const next=[...profiles.filter(x=>x.id!==p.id),p];localStorage.setItem(KEY,JSON.stringify(next));
+  }
+  await loadConnections();return p;
+}
+async function deleteConnection(id){
+  if(native)await bridge('apiDelete',{id});
+  else{sessionStorage.removeItem('quill-api-key-'+id);localStorage.setItem(KEY,JSON.stringify(profiles.filter(p=>p.id!==id)));}
+  await loadConnections();
+}
+async function remoteRequest(id,payload,{signal,onStatus=()=>{}}){
+  const p=profiles.find(p=>p.id===id);if(!p)throw Error('This API connection was removed. Choose another model in Manage Models.');
+  if(signal.aborted)throw new DOMException('Writing stopped.','AbortError');
+  onStatus('Waiting for '+p.name+'…');
+  if(native){
+    const cancel=()=>bridge('apiCancel',{id}).catch(()=>{});signal.addEventListener('abort',cancel,{once:true});
+    try{return await bridge('apiGenerate',{id,...payload},{timeout:180000});}finally{signal.removeEventListener('abort',cancel);}
+  }
+  const {url,body}=apiRequest(p,payload),key=sessionStorage.getItem('quill-api-key-'+id),headers={'Content-Type':'application/json'};
+  if(p.format==='anthropic'){headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-access']='true';if(key)headers['x-api-key']=key;}else if(key)headers.Authorization='Bearer '+key;
+  const controller=new AbortController(),abort=()=>controller.abort(),timer=setTimeout(abort,180000);signal.addEventListener('abort',abort,{once:true});
+  try{
+    const response=await fetch(url,{method:'POST',headers,body:JSON.stringify(body),signal:controller.signal,redirect:'error',credentials:'omit'});
+    if(!response.ok)throw Error(`API request failed (${response.status}). Check your key, model ID, quota and endpoint in Manage Models.`);
+    return apiText(p,await response.json());
+  }catch(e){if(signal.aborted)throw new DOMException('Writing stopped.','AbortError');if(e.name==='AbortError')throw Error('The API timed out. Try again or choose another model.');if(e instanceof TypeError)throw Error('Could not reach this API. Browser connections require CORS support; the iPhone app can connect directly.');throw e;}
+  finally{clearTimeout(timer);signal.removeEventListener('abort',abort);}
+}
+return {loadConnections,connections,saveConnection,deleteConnection,remoteRequest};
+})();
 const QuillAi = (() => {
-const {countWords,escapeXML}=QuillCore;
+const {countWords,escapeXML}=QuillCore; const {characterContext}=QuillCodex;
 
 const chapterLengths = [500,1000,1500,2000,3000];
 function textToHTML(text) {
@@ -176,8 +276,8 @@ function buildChapterContext(book, chapter, chapters, notes, plain) {
   const previous=chapters.slice(0,index);
   return {
     title:chapter.title, number:index+1,
-    plot:book.plotBeats||'', style:book.writingStyle||'',
-    notes:notes.map(n=>`${n.category||'Note'}: ${n.title}\n${plain(n.html)}`).join('\n\n'),
+    summary:book.synopsis||'', plot:book.plotBeats||'', style:book.writingStyle||'',
+    notes:notes.map(n=>`${n.category||'Note'}: ${n.category==='Character'?characterContext(n,plain):n.title+'\n'+plain(n.html||'')}`).join('\n\n'),
     earlier:previous.map((c,i)=>`Chapter ${i+1}: ${c.title}\n${c.synopsis||'(No synopsis)'}`).join('\n\n'),
     previousEnding:previous.length?plain(previous.at(-1).html).slice(-1800):''
   };
@@ -197,7 +297,7 @@ function writerSession({request,signal}) {
 async function prepareChapter(input,{ask,onStatus}) {
   const target=Number(input.targetWords);
   if(!chapterLengths.includes(target)||!input.prompt?.trim())throw Error('Add a chapter prompt and choose a chapter length.');
-  if([input.plot,input.notes,input.earlier].some(s=>String(s||'').length>300000))throw Error('The story context is too large for one on-device job. Shorten the plot or story notes.');
+  if([input.summary,input.plot,input.notes,input.earlier,input.style,input.prompt].some(s=>String(s||'').length>300000))throw Error('The story context is too large for one on-device job. Shorten the plot or story notes.');
   const compact=async(text,budget,label)=>{
     let value=String(text||'').trim();if(value.length<=budget)return value;
     const tooLong=()=>Error(`The writer could not condense your ${label} to fit. Try shortening that section or choose another writing model.`);
@@ -217,12 +317,13 @@ async function prepareChapter(input,{ask,onStatus}) {
     if(value.length>budget)throw tooLong();
     return value;
   };
-  const plot=await compact(input.plot,1500,'plot beats');
-  const notes=await compact(input.notes,850,'story notes');
+  const summary=await compact(input.summary,500,'story summary');
+  const plot=await compact(input.plot,1300,'plot beats');
+  const notes=await compact(input.notes,1100,'story notes');
   const earlier=await compact(input.earlier,750,'earlier chapter synopses');
   const prompt=await compact(input.prompt,1400,'chapter instructions');
   const style=await compact(input.style,500,'writing preferences');
-  const context=`CHAPTER ${input.number}: ${input.title.slice(0,200)}\nCHAPTER REQUEST: ${prompt}\nWRITING PREFERENCES: ${style||'Follow the prompt and recent prose.'}\nWHOLE-BOOK PLOT (future events are context, not events to include now):\n${plot||'No overall plot supplied.'}\nSTORY NOTES:\n${notes}\nEARLIER CHAPTERS:\n${earlier}`;
+  const context=`CHAPTER ${input.number}: ${input.title.slice(0,200)}\nCHAPTER REQUEST: ${prompt}\nWRITING PREFERENCES: ${style||'Follow the prompt and recent prose.'}\nCODEX STORY SUMMARY:\n${summary||'No summary supplied.'}\nWHOLE-BOOK PLOT (future events are context, not events to include now):\n${plot||'No overall plot supplied.'}\nSTORY NOTES:\n${notes}\nEARLIER CHAPTERS:\n${earlier}`;
   return {context,target,parts:Math.ceil(target/400)};
 }
 // This step only proposes an outline. The UI saves it and waits for the user's approval.
@@ -251,32 +352,36 @@ async function generateChapter(input,options) {
   }
   check();onStatus(`Draft ready · ${countWords(completed).toLocaleString()} words`);return completed;
 }
-return {chapterLengths,textToHTML,canUseDraft,chunkText,buildChapterContext,generateChapter,generateChapterOutline,outlineLimit};
+
+// Character and next-beat suggestions use the same bounded Codex context as chapter writing.
+async function generateCodex(kind,input,options){
+  const {ask}=writerSession(options),onStatus=options.onStatus||(()=>{});
+  const {context}=await prepareChapter({...input,number:input.number||1,title:input.title||'Codex',targetWords:500,prompt:input.prompt||'Help develop this story.'},{ask,onStatus});
+  if(kind==='character')return ask('Create one fictional character consistent with the book Codex. Preserve any existing details supplied by the author. Return only a JSON object with string fields: name, role, age, appearance, personality, backstory, motivation, arc, relationships. Keep each field to one or two short sentences.',context+'\nCreate a character for this story. Avoid duplicating existing characters unless the author requests it.',900,options.onText);
+  return ask('Help a novelist move the story forward. Use the Codex as story reference. Suggest exactly one next plot beat following the last listed beat. Respect established facts, character motivations, tone, chronology and the intended ending. Return the beat only, in 2–4 sentences; no introduction.',context+'\nSuggest the next beat. This is a proposal the author will edit before adding it to the plot.',350,options.onText);
+}
+return {chapterLengths,textToHTML,canUseDraft,chunkText,buildChapterContext,generateChapter,generateChapterOutline,generateCodex,outlineLimit};
 })();
 const QuillAIRuntime = (() => {
-const {native,bridge}=QuillStorage;
+const {native,bridge}=QuillStorage; const {localModels,isLocalModel}=QuillModels; const {connections,remoteRequest}=QuillConnections;
 
-const modelChoices = [
-  ['apple','Apple Intelligence · on this iPhone/iPad'],
-  ['qwen-1.7','Qwen 3 · 1.7B · balanced'],
-  ['qwen-0.6','Qwen 3 · 0.6B · lighter']
-];
+function modelChoices(){return [['apple','Apple Intelligence · on this iPhone/iPad'],...localModels.filter(m=>native?m.native!==false:!!m.web).map(m=>[m.id,m.name]),...connections().map(p=>[p.id,p.name+' · API'])];}
 const WEBLLM='https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.85/+esm';
 let engine=null,worker=null,loadedKey=null;
 function releaseQwen(){worker?.terminate();worker=null;engine=null;loadedKey=null;}
 const revisionKey=model=>'quill-qwen-revision-'+model;
 function installed(model){try{return JSON.parse(localStorage.getItem(revisionKey(model))||'null');}catch{return null;}}
 async function browserModel(model){
-  if(!['qwen-0.6','qwen-1.7'].includes(model))throw Error('Choose a Qwen model.');
-  const adapter=await navigator.gpu?.requestAdapter();if(!adapter)throw Error('Qwen needs a compatible WebGPU graphics device.');
+  const catalog=localModels.find(m=>m.id===model);if(!catalog?.web)throw Error('This model is available in the iPhone/iPad app only.');
+  const adapter=await navigator.gpu?.requestAdapter();if(!adapter)throw Error('Local AI needs a compatible WebGPU graphics device.');
   const precision=adapter.features.has('shader-f16')?'q4f16_1':'q4f32_1';
-  const id=`Qwen3-${model==='qwen-0.6'?'0.6B':'1.7B'}-${precision}-MLC`;
+  const id=`${catalog.web}-${precision}-MLC`;
   return {id,repo:'mlc-ai/'+id};
 }
 async function latestModel(model,signal){
   const spec=await browserModel(model);
   const response=await fetch('https://huggingface.co/api/models/'+spec.repo,{cache:'no-store',signal});
-  if(!response.ok)throw Error('Could not check Qwen’s model repository. Your installed version is kept.');
+  if(!response.ok)throw Error('Could not check the model repository. Your installed version is kept.');
   const info=await response.json();if(!/^[a-f0-9]{40}$/.test(info.sha))throw Error('The model repository returned an invalid version.');
   return {...spec,sha:info.sha};
 }
@@ -284,16 +389,17 @@ async function checkQwenUpdate(model){
   if(native)return bridge('aiCheckUpdate',{model});
   const latest=await latestModel(model,AbortSignal.timeout(30000)),old=installed(model);
   const available=old?.sha!==latest.sha||old?.id!==latest.id;
-  return {available,message:available?(old?'A Qwen model update is available. Download it when you’re ready; the working version is kept until the new copy loads.':'Qwen is ready for its first download.'):`This Qwen model is up to date (${latest.sha.slice(0,8)}).`};
+  return {available,message:available?(old?'A local model update is available. Download it when you’re ready; the working version is kept until the new copy loads.':'The model is ready for its first download.'):`This local model is up to date (${latest.sha.slice(0,8)}).`};
 }
 async function checkModel(model){
+  const remote=connections().find(p=>p.id===model);if(remote)return {available:true,message:`Uses ${remote.name} (${new URL(remote.endpoint).host}). Story context is sent to this API. Provider charges may apply.`};
   if(native)return bridge('aiStatus',{model});
   if(model==='apple')return {available:false,message:'Apple Intelligence runs in the Quill iPhone/iPad app. Choose Qwen to write in this browser.'};
-  if(!modelChoices.some(([id])=>id===model))return {available:false,message:'Choose a writing model.'};
-  if(!navigator.gpu)return {available:false,message:'Qwen needs a browser and device with WebGPU. Try an up-to-date Chrome or Edge on a supported computer or Android device. Ordinary editing still works here.'};
+  if(!modelChoices().some(([id])=>id===model))return {available:false,message:'Choose a writing model.'};
+  if(!navigator.gpu)return {available:false,message:'Local AI needs a browser and device with WebGPU. Try an up-to-date Chrome or Edge on a supported computer or Android device. Ordinary editing still works here.'};
   try{
     await browserModel(model);
-    return {available:true,message:`Qwen runs on this device. First use downloads roughly ${model==='qwen-0.6'?'0.5 GB':'1.2 GB'}; extra memory is needed while writing. Downloads are cached when browser storage allows. No account or usage charge.`};
+    return {available:true,message:`${localModels.find(m=>m.id===model)?.name} runs on this device. First download is approximately ${localModels.find(m=>m.id===model)?.size} (browser files may be larger). Extra memory is needed while writing. No account or usage charge.`};
   }catch{return {available:false,message:'This browser could not access a compatible GPU. Check hardware acceleration or try another supported device.'};}
 }
 function aborted(){return new DOMException('Writing stopped.','AbortError');}
@@ -310,15 +416,17 @@ async function loadBrowserQwen(model,{signal,onStatus,update=false}){
   const selected=!update&&old?.id===spec.id?old:await latestModel(model,signal);
   const key=selected.id+'-'+selected.sha;
   if(engine&&loadedKey===key)return engine;
-  releaseQwen();onStatus('Loading Qwen · the first download can take several minutes…');
+  releaseQwen();onStatus('Loading model · the first download can take several minutes…');
   const {CreateWebWorkerMLCEngine,prebuiltAppConfig}=await withAbort(import(WEBLLM),signal);
   const preset=prebuiltAppConfig.model_list.find(m=>m.model_id===selected.id);
-  if(!preset)throw Error('This Qwen model needs a newer Quill app. Your installed copy is kept.');
+  if(!preset)throw Error('This local model needs a newer Quill app. Your installed copy is kept.');
   const config={...prebuiltAppConfig,model_list:[{...preset,model_id:key,model:`https://huggingface.co/${selected.repo}/resolve/${selected.sha}/`}]};
+  const attempts=JSON.parse(localStorage.getItem('quill-model-attempts-'+model)||'[]');
+  if(!attempts.some(x=>x.sha===selected.sha&&x.id===selected.id))localStorage.setItem('quill-model-attempts-'+model,JSON.stringify([...attempts,selected]));
   worker=new Worker(new URL('qwen-worker.js',location.href),{type:'module'});
-  const workerError=new Promise((_,reject)=>worker.addEventListener('error',()=>reject(Error('The Qwen worker could not load. Check your connection and reload Quill.')),{once:true}));
+  const workerError=new Promise((_,reject)=>worker.addEventListener('error',()=>reject(Error('The model worker could not load. Check your connection and reload Quill.')),{once:true}));
   engine=await withAbort(Promise.race([workerError,CreateWebWorkerMLCEngine(worker,key,{
-    appConfig:config,initProgressCallback:report=>{if(!signal.aborted)onStatus(`Loading Qwen · ${Math.round(Math.max(0,Math.min(1,report.progress||0))*100)}% — ${report.text}`);}
+    appConfig:config,initProgressCallback:report=>{if(!signal.aborted)onStatus(`Loading model · ${Math.round(Math.max(0,Math.min(1,report.progress||0))*100)}% — ${report.text}`);}
   },{context_window_size:4096})]),signal);
   if(signal.aborted){releaseQwen();throw aborted();}
   // Advance the installed pointer only after the new weights have loaded successfully.
@@ -331,11 +439,12 @@ async function updateQwen(model,{signal,onStatus}){
     try{return await withAbort(bridge('aiUpdate',{model},{timeout:1800000,onStatus}),signal);}finally{signal.removeEventListener('abort',cancel);}
   }
   const cancel=()=>releaseQwen();signal.addEventListener('abort',cancel,{once:true});
-  try{await loadBrowserQwen(model,{signal,onStatus,update:true});return 'Qwen is installed and up to date.';}
+  try{await loadBrowserQwen(model,{signal,onStatus,update:true});return 'The model is installed and up to date.';}
   catch(e){releaseQwen();throw e;}finally{signal.removeEventListener('abort',cancel);}
 }
 async function createWriter(model,{signal,onStatus}){
   const status=await checkModel(model);if(!status.available)throw Error(status.message);if(signal.aborted)throw aborted();
+  if(model.startsWith('api-'))return {request:async(payload,onProgress)=>{const text=await withAbort(remoteRequest(model,payload,{signal,onStatus}),signal);onProgress?.(text);return text;},close:()=>{}};
   if(native){
     const cancel=()=>bridge('aiCancel').catch(()=>{});signal.addEventListener('abort',cancel,{once:true});
     return {request:(payload,onProgress)=>withAbort(bridge('aiGenerate',{...payload,model},{timeout:1800000,onProgress,onStatus}),signal),close:()=>signal.removeEventListener('abort',cancel)};
@@ -348,7 +457,7 @@ async function createWriter(model,{signal,onStatus}){
         if(signal.aborted)throw aborted();await withAbort(active.resetChat(),signal);
         const stream=await withAbort(active.chat.completions.create({
           messages:[{role:'system',content:instructions},{role:'user',content:prompt}],stream:true,
-          max_tokens:maxTokens,temperature:0.75,top_p:0.8,frequency_penalty:0.15,extra_body:{enable_thinking:false}
+          max_tokens:maxTokens,temperature:0.75,top_p:0.8,frequency_penalty:0.15,...(model.startsWith('qwen-')?{extra_body:{enable_thinking:false}}:{})
         }),signal);
         // Terminating the worker can leave a pending iterator read unresolved; race each read with Stop.
         const iterator=stream[Symbol.asyncIterator]();let text='';
@@ -356,15 +465,51 @@ async function createWriter(model,{signal,onStatus}){
         if(signal.aborted)throw aborted();return text;
       },close:()=>signal.removeEventListener('abort',cancel)
     };
-  }catch(error){signal.removeEventListener('abort',cancel);releaseQwen();if(signal.aborted)throw aborted();throw Error(`Qwen could not start. Check your connection, free storage and GPU memory, or try the lighter model. ${error.message||''}`);}
+  }catch(error){signal.removeEventListener('abort',cancel);releaseQwen();if(signal.aborted)throw aborted();throw Error(`The local model could not start. Check your connection, free storage and GPU memory, or try the lighter model. ${error.message||''}`);}
 }
-return {modelChoices,checkModel,createWriter,releaseQwen,checkQwenUpdate,updateQwen};
+
+// Inspect only the selected model's CacheStorage entries; never clear the manuscript database.
+async function modelCacheEntries(model){
+  const item=localModels.find(m=>m.id===model);if(!item?.web)return [];
+  const entries=[];if(!globalThis.caches)return entries;
+  for(const name of await caches.keys()){
+    if(!name.startsWith('webllm/'))continue;
+    const cache=await caches.open(name);
+    for(const request of await cache.keys()){
+      const url=new URL(request.url);
+      const weights=url.hostname==='huggingface.co'&&url.pathname.startsWith('/mlc-ai/'+item.web+'-');
+      const wasm=url.pathname.split('/').at(-1)?.startsWith(item.web+'-');
+      if(weights||wasm)entries.push({cache,request});
+    }
+  }
+  return entries;
+}
+async function modelStorage(){
+  if(native)return bridge('aiModels');
+  return Promise.all(localModels.filter(m=>m.web).map(async m=>{
+    const entries=await modelCacheEntries(m.id);let bytes=0,unknown=false;
+    for(const {cache,request} of entries){const response=await cache.match(request),length=Number(response?.headers.get('content-length'));if(length)bytes+=length;else unknown=true;}
+    return {id:m.id,installed:!!installed(m.id)&&entries.length>0,bytes,partial:entries.length>0&&!installed(m.id),estimated:unknown};
+  }));
+}
+async function deleteModel(model){
+  if(!isLocalModel(model))throw Error('Choose a downloaded model. Apple Intelligence is managed in iOS Settings.');
+  if(native)return bridge('aiDeleteModel',{model});
+  releaseQwen();
+  for(const {cache,request} of await modelCacheEntries(model))await cache.delete(request);
+  localStorage.removeItem(revisionKey(model));localStorage.removeItem('quill-model-attempts-'+model);
+  return true;
+}
+return {modelChoices,checkModel,createWriter,releaseQwen,checkQwenUpdate,updateQwen,modelStorage,deleteModel};
 })();
 (() => {
 const {uuid,union,heads,documents,revise,countWords,backup,fromBackup,escapeXML:esc}=QuillCore;
 const storage=QuillStorage;
-const {chapterLengths,textToHTML,canUseDraft,buildChapterContext,generateChapter,generateChapterOutline,outlineLimit}=QuillAi;
-const {modelChoices,checkModel,createWriter,checkQwenUpdate,updateQwen}=QuillAIRuntime;
+const {characterFields,characterContext,parseCharacter,portraitPrompt}=QuillCodex;
+const {localModels,isLocalModel}=QuillModels;
+const {loadConnections,connections,saveConnection,deleteConnection}=QuillConnections;
+const {chapterLengths,textToHTML,canUseDraft,buildChapterContext,generateChapter,generateChapterOutline,generateCodex,outlineLimit}=QuillAi;
+const {modelChoices,checkModel,createWriter,checkQwenUpdate,updateQwen,modelStorage,deleteModel}=QuillAIRuntime;
 const {sanitize,plain,manuscriptHTML,epub,docx}=QuillExport;
 const $=s=>document.querySelector(s), app=$('#app'), modal=$('#modal');
 const icons={book:'M3 3h6a3 3 0 0 1 3 3v15a4 4 0 0 0-4-2H3z M21 3h-6a3 3 0 0 0-3 3v15a4 4 0 0 1 4-2h5z',write:'m16 3 5 5-12 12-6 1 1-6z M14 5l5 5',grid:'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',plus:'M12 5v14 M5 12h14',search:'M21 21l-5-5 M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0',settings:'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8 M12 2v3 M12 19v3 M2 12h3 M19 12h3 M5 5l2 2 M17 17l2 2 M5 19l2-2 M17 7l2-2',focus:'M8 3H3v5 M16 3h5v5 M3 16v5h5 M21 16v5h-5',export:'M12 15V2 M7 7l5-5 5 5 M4 13v8h16v-8',back:'M15 4l-8 8 8 8',menu:'M4 6h16 M4 12h16 M4 18h16',clock:'M12 8v5l3 2 M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',note:'M5 2h14v20H5z M8 7h8 M8 11h8 M8 15h5',trash:'M3 6h18 M9 6V3h6v3 M5 6l1 15h12l1-15 M10 10v7 M14 10v7',sync:'M20 6v5h-5 M4 18v-5h5 M5 8a8 8 0 0 1 14-3l1 6 M19 16A8 8 0 0 1 5 19l-1-6',info:'M12 11v6 M12 7v.1 M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',check:'m5 12 4 4L19 6'};
@@ -380,7 +525,7 @@ const all=(deleted=false)=>documents(revisions,deleted);
 const find=id=>all().find(d=>d.id===id)||all(true).find(d=>d.id===id);
 const book=()=>find(bookId);
 const chapters=()=>all().filter(d=>d.type==='chapter'&&d.book===bookId).sort((a,b)=>(a.order||0)-(b.order||0)||a.id.localeCompare(b.id));
-const cards=()=>all().filter(d=>d.type==='card'&&d.book===bookId&&d.category!=='Generated draft');
+const cards=()=>all().filter(d=>d.type==='card'&&d.book===bookId&&!['Generated draft','Codex suggestion'].includes(d.category));
 const words=d=>countWords(plain(d?.html||''));
 const total=()=>chapters().reduce((n,c)=>n+words(c),0);
 const bodyOf=d=>{const {id,revision,conflicts,...body}=d;return body;};
@@ -392,7 +537,7 @@ async function create(body){const id=uuid();await persist([revise(id,{deleted:fa
 function queueSave(){setSaved('Saving…');clearTimeout(timer);timer=setTimeout(()=>flush().catch(fail),1400);}
 function capture(){if(!draft||!$('#editor'))return;draft.body.html=$('#editor').innerHTML;draft.body.title=$('#chapter-title').value;draft.edits++;queueSave();updateCounts();}
 function flushManuscript(){clearTimeout(timer);saveChain=saveChain.catch(()=>{}).then(async()=>{if(!draft||draft.edits===draft.saved)return;const d=draft,edit=d.edits;const body={...d.body,title:d.body.title||'Untitled'};if(body.type==='chapter')body.html=sanitize(d.body.html);const r=revise(d.id,body,[d.base]);try{await persist([r]);d.base=r.id;d.saved=edit;setSaved(d.edits===edit?'Saved on this device':'Saving…');if(d.edits!==edit)queueSave();}catch(e){setSaved('Save failed · export a backup',true);throw e;}});return saveChain;}
-async function flush(){await flushManuscript();await flushAI();}
+async function flush(){await flushManuscript();await flushAI();await flushCharacter();}
 function updateCounts(){const chapterDraft=draft?.body.type==='chapter'?draft:null;const count=chapterDraft?words(chapterDraft.body):words(find(entryId));document.querySelectorAll('[data-chapter-words]').forEach(e=>e.textContent=format(count));const amount=total()+(chapterDraft?count-words(find(chapterDraft.id)):0);document.querySelectorAll('[data-total-words]').forEach(e=>e.textContent=format(amount));const goal=book()?.goal||80000;document.querySelectorAll('[data-progress]').forEach(e=>e.style.width=Math.min(100,amount/goal*100)+'%');document.querySelectorAll('[data-session]').forEach(e=>e.textContent=format(Math.max(0,amount-sessionStart)));}
 function closePanels(){document.body.classList.remove('sidebar-open');}
 function showModal(html){modal.innerHTML=`<button type="button" aria-label="Close dialog" class="close-dialog round" data-action="close">✕</button>${html}`;modal.setAttribute('aria-labelledby','modal-title');if(!modal.open)modal.showModal();}
@@ -407,7 +552,7 @@ function sample(){const rows=[
  ];return rows.map(([entity,body])=>({schema:1,id:entity+'-initial',entity,parents:[],time:1791820800000,body:{deleted:false,...body}}));}
 function render(){draft=null;document.body.classList.toggle('in-book',!!bookId);if(bookId&&!book()){bookId=null;}bookId?renderWorkspace():renderLibrary();}
 function renderLibrary(){const books=all().filter(d=>d.type==='book');app.innerHTML=`<header class="library-nav">${brand}<div class="row">${btn('settings','<span class="desktop-label">Settings & sync</span>','settings','subtle')}${btn('trash','', 'trash','subtle','aria-label="Recently deleted"')}</div></header><main class="library"><div class="library-head"><div><span class="eyebrow">YOUR WRITING DESK</span><h1>Your stories, taking shape.</h1><p class="muted">A little space. A few words. A world of your own.</p></div>${btn('new-book','New book','plus','primary')}</div><div class="row spread" style="margin-bottom:20px"><span class="eyebrow">MY BOOKS · ${books.length}</span><span class="muted" style="font-size:11px">Private drafts · saved on this device</span></div><div class="shelf">${books.map(b=>{const cs=all().filter(c=>c.book===b.id&&c.type==='chapter');return `<button class="book-card" data-action="open-book" data-id="${b.id}"><div class="cover" style="--cover:${['#61566f','#3b625d','#596782','#997563','#6f734c'].includes(b.color)?b.color:'#61566f'}"><span class="eyebrow">A WORK IN PROGRESS</span><span class="book-title">${esc(b.title)}</span><span class="author">${esc(b.author||'Your next novel')}</span></div><h3>${esc(b.title)}</h3><div class="row spread meta"><span>${cs.length} chapters</span><span>${format(cs.reduce((n,c)=>n+words(c),0))} words</span></div>${b.conflicts?'<p class="conflict">Parallel book drafts · review in history</p>':''}</button>`;}).join('')}<button class="new-book" data-action="new-book"><span class="plus">+</span><span>Begin something new</span><small>Every story starts with a blank page.</small></button></div><div class="library-foot"><span>${icon('check')} Your words stay yours. No account needed.</span><button data-action="settings">Back up & connect a sync folder →</button></div></main>`;}
-function renderWorkspace(){const b=book(),cs=chapters();if(!cs.find(c=>c.id===entryId))entryId=cs[0]?.id||null;const c=find(entryId);app.innerHTML=`<div class="workspace"><header class="topbar"><button class="round mobile-only" data-action="sidebar" aria-label="Show chapters">${icon('menu')}</button><button data-action="home" aria-label="Back to books">${brand}</button><div class="breadcrumb"><button data-action="home">My books</button><span>/</span><strong>${esc(b.title)}</strong></div><div class="topbar-actions"><span class="saved ${saveError?'error':''}">${esc(currentSave)}</span><button class="round" data-action="search" aria-label="Search manuscript">${icon('search')}</button><button class="round" data-action="focus" aria-label="Toggle focus mode">${icon('focus')}</button><button class="round details-button" data-action="inspector" aria-label="Chapter details" aria-haspopup="dialog">${icon('info')}</button>${btn('export','Export','export','subtle')}</div></header><aside class="sidebar"><div class="book-label"><span class="eyebrow">THE MANUSCRIPT</span><h3>${esc(b.title)}</h3><small>${esc(b.author||'Your story, in your words')}</small></div><nav class="side-nav">${[['write','Manuscript','write'],['outline','Outline','book'],['plot','Plot beats','note'],['board','Story notes','grid']].map(([v,l,i])=>`<button class="nav-item ${view===v?'active':''}" data-action="view" data-view="${v}">${icon(i)}${l}${v==='board'?`<small style="margin-left:auto">${cards().length}</small>`:''}</button>`).join('')}</nav><div class="section-label"><span class="eyebrow">CHAPTERS</span><button class="round" data-action="new-chapter" aria-label="Add chapter">${icon('plus')}</button></div>${cs.map((ch,i)=>`<div class="chapter-item ${ch.id===entryId&&view==='write'?'active':''}"><button class="chapter-open" data-action="open-chapter" data-id="${ch.id}"><span class="chapter-num">${String(i+1).padStart(2,'0')}</span><span class="chapter-text"><strong>${esc(ch.title)}${ch.conflicts?' ⚑':''}</strong><small><span class="dot ${ch.status==='Complete'?'done':''}"></span>${format(words(ch))} words</small></span></button><div class="chapter-arrows"><button data-action="move" data-id="${ch.id}" data-direction="-1" aria-label="Move ${esc(ch.title)} up" ${i===0?'disabled':''}>▲</button><button data-action="move" data-id="${ch.id}" data-direction="1" aria-label="Move ${esc(ch.title)} down" ${i===cs.length-1?'disabled':''}>▼</button></div></div>`).join('')}<div class="sidebar-bottom"><button class="nav-item" data-action="book-settings">${icon('settings')}Book details & goals</button><button class="nav-item" data-action="settings">${icon('sync')}Backup & sync</button><button class="nav-item" data-action="trash">${icon('trash')}Recently deleted</button></div></aside><main class="main" id="main-content">${view==='write'?writer(c,cs.findIndex(ch=>ch.id===entryId)+1):view==='outline'?outline(cs):view==='plot'?plotPage(b):board()}</main><aside class="inspector">${inspector(c,b)}</aside><footer class="statusbar"><span><span data-chapter-words>${format(words(c))}</span> words <span class="desktop-wide">· ${Math.max(1,Math.ceil(words(c)/250))} min read</span></span><span><span data-total-words>${format(total())}</span> / ${format(b.goal||80000)} words</span><span class="desktop-wide">English · spell check on</span></footer></div>`;
+function renderWorkspace(){const b=book(),cs=chapters();if(!cs.find(c=>c.id===entryId))entryId=cs[0]?.id||null;const c=find(entryId);app.innerHTML=`<div class="workspace"><header class="topbar"><button class="round mobile-only" data-action="sidebar" aria-label="Show chapters">${icon('menu')}</button><button data-action="home" aria-label="Back to books">${brand}</button><div class="breadcrumb"><button data-action="home">My books</button><span>/</span><strong>${esc(b.title)}</strong></div><div class="topbar-actions"><span class="saved ${saveError?'error':''}">${esc(currentSave)}</span><button class="round" data-action="search" aria-label="Search manuscript">${icon('search')}</button><button class="round" data-action="focus" aria-label="Toggle focus mode">${icon('focus')}</button><button class="round details-button" data-action="inspector" aria-label="Chapter details" aria-haspopup="dialog">${icon('info')}</button>${btn('export','Export','export','subtle')}</div></header><aside class="sidebar"><div class="book-label"><span class="eyebrow">THE MANUSCRIPT</span><h3>${esc(b.title)}</h3><small>${esc(b.author||'Your story, in your words')}</small></div><nav class="side-nav">${[['write','Manuscript','write'],['outline','Outline','book'],['plot','Codex','note'],['board','Story notes','grid']].map(([v,l,i])=>`<button class="nav-item ${view===v?'active':''}" data-action="view" data-view="${v}">${icon(i)}${l}${v==='board'?`<small style="margin-left:auto">${cards().length}</small>`:''}</button>`).join('')}</nav><div class="section-label"><span class="eyebrow">CHAPTERS</span><button class="round" data-action="new-chapter" aria-label="Add chapter">${icon('plus')}</button></div>${cs.map((ch,i)=>`<div class="chapter-item ${ch.id===entryId&&view==='write'?'active':''}"><button class="chapter-open" data-action="open-chapter" data-id="${ch.id}"><span class="chapter-num">${String(i+1).padStart(2,'0')}</span><span class="chapter-text"><strong>${esc(ch.title)}${ch.conflicts?' ⚑':''}</strong><small><span class="dot ${ch.status==='Complete'?'done':''}"></span>${format(words(ch))} words</small></span></button><div class="chapter-arrows"><button data-action="move" data-id="${ch.id}" data-direction="-1" aria-label="Move ${esc(ch.title)} up" ${i===0?'disabled':''}>▲</button><button data-action="move" data-id="${ch.id}" data-direction="1" aria-label="Move ${esc(ch.title)} down" ${i===cs.length-1?'disabled':''}>▼</button></div></div>`).join('')}<div class="sidebar-bottom"><button class="nav-item" data-action="manage-models">${icon('settings')}Manage Models</button><button class="nav-item" data-action="book-settings">${icon('settings')}Book details & goals</button><button class="nav-item" data-action="settings">${icon('sync')}Backup & sync</button><button class="nav-item" data-action="trash">${icon('trash')}Recently deleted</button></div></aside><main class="main" id="main-content">${view==='write'?writer(c,cs.findIndex(ch=>ch.id===entryId)+1):view==='outline'?outline(cs):view==='plot'?plotPage(b):board()}</main><aside class="inspector">${inspector(c,b)}</aside><footer class="statusbar"><span><span data-chapter-words>${format(words(c))}</span> words <span class="desktop-wide">· ${Math.max(1,Math.ceil(words(c)/250))} min read</span></span><span><span data-total-words>${format(total())}</span> / ${format(b.goal||80000)} words</span><span class="desktop-wide">English · spell check on</span></footer></div>`;
   if(view==='plot'){draft={id:b.id,base:b.revision.id,body:bodyOf(b),edits:0,saved:0};}
   if(view==='write'&&c){draft={id:c.id,base:c.revision.id,body:bodyOf(c),edits:0,saved:0};$('#editor').innerHTML=sanitize(c.html);$('#editor').addEventListener('input',capture);$('#chapter-title').addEventListener('input',capture);$('#editor').addEventListener('paste',e=>{e.preventDefault();document.execCommand('insertText',false,e.clipboardData.getData('text/plain'));capture();});$('#editor').addEventListener('drop',e=>e.preventDefault());}
 }
@@ -417,8 +562,8 @@ function chapterDetails(){const c=find(entryId);closePanels();if(!c){showModal(m
 function outline(cs){return `<div class="content-page"><div class="page-heading row spread"><div><span class="eyebrow">THE BIG PICTURE</span><h1>Your story, chapter by chapter.</h1><p class="muted">Give every chapter a place and a purpose.</p></div>${btn('new-chapter','','plus','primary','aria-label="Add chapter"')}</div><div class="outline">${cs.map((c,i)=>`<div class="outline-card"><span class="chapter-num">${String(i+1).padStart(2,'0')}</span><button class="body" data-action="open-chapter" data-id="${c.id}" style="text-align:left"><h3>${esc(c.title)}</h3><p>${esc(c.synopsis||'Add a synopsis in chapter details.')}</p><small>${format(words(c))} words</small></button><span class="badge">${esc(c.status||'Drafting')}</span><div class="row"><button data-action="move" data-id="${c.id}" data-direction="-1" aria-label="Move ${esc(c.title)} up" ${i===0?'disabled':''}>↑</button><button data-action="move" data-id="${c.id}" data-direction="1" aria-label="Move ${esc(c.title)} down" ${i===cs.length-1?'disabled':''}>↓</button></div></div>`).join('')||'<p class="empty">Your outline will appear here as you add chapters.</p>'}</div></div>`;}
 function board(){return `<div class="content-page"><div class="page-heading row spread"><div><span class="eyebrow">BEHIND THE STORY</span><h1>A world worth getting lost in.</h1><p class="muted">Keep your characters, places, and sparks of inspiration close.</p></div>${btn('new-card','','plus','primary','aria-label="Add story note"')}</div><div class="board">${cards().map(c=>`<button class="note-card" data-action="edit-card" data-id="${c.id}"><span class="eyebrow">${esc(c.category||'Idea')}</span><h3>${esc(c.title)}${c.conflicts?' ⚑':''}</h3><p>${esc(plain(c.html))}</p></button>`).join('')}<button class="new-book" style="min-height:200px" data-action="new-card"><span class="plus">+</span>Add a story note</button></div></div>`;}
 function bookForm(isNew){const b=isNew?{}:book();showModal(modalHead(isNew?'Begin a new story.':'Make this book yours.','A working title is all you need. You can change everything later.')+`<form id="book-form" data-new="${isNew}" data-base="${b.revision?.id||''}"><label for="book-title">Book title</label><input id="book-title" required maxlength="1000" placeholder="Untitled novel" value="${esc(b.title||'')}"><label for="book-author">Author</label><input id="book-author" maxlength="200" placeholder="Your name or pen name" value="${esc(b.author||'')}"><div class="row"><div><label for="book-goal">Manuscript word goal</label><input id="book-goal" type="number" min="1" max="10000000" value="${b.goal||80000}"></div><div><label for="daily-goal">Session word goal</label><input id="daily-goal" type="number" min="1" max="1000000" value="${b.dailyGoal||500}"></div></div><label for="book-color">Cover color</label><select id="book-color">${[['#61566f','Lavender dusk'],['#3b625d','Forest'],['#596782','Blue hour'],['#997563','Terracotta'],['#6f734c','Olive']].map(([v,l])=>`<option value="${v}" ${b.color===v?'selected':''}>${l}</option>`).join('')}</select>${!isNew?`<div class="row" style="margin-top:15px">${btn('history','History','clock','subtle',`data-id="${b.id}"`)}${btn('delete','Move book to trash','trash','subtle danger',`data-id="${b.id}"`)}</div>`:''}<div class="modal-actions">${btn('close','Cancel','','subtle')}<button class="btn primary" type="submit">${isNew?'Create book':'Save details'}</button></div></form>`);}
-function cardForm(id){const c=id?find(id):null;showModal(modalHead(c?'Story note':'Catch an idea.','Characters, places, research, and the details you don’t want to lose.')+`<form id="card-form" data-id="${id||''}" data-base="${c?.revision.id||''}"><label for="card-title">Title</label><input id="card-title" required maxlength="1000" value="${esc(c?.title||'')}"><label for="card-category">Type</label><select id="card-category">${['Character','Place','Idea','Research'].map(s=>`<option ${c?.category===s?'selected':''}>${s}</option>`).join('')}</select><label for="card-text">Notes</label><textarea id="card-text" rows="9">${esc(plain(c?.html||''))}</textarea>${c?`<div class="row">${btn('history','History','clock','subtle',`data-id="${id}"`)}${btn('delete','Trash','trash','subtle danger',`data-id="${id}"`)}</div>`:''}<div class="modal-actions">${btn('close','Cancel','','subtle')}<button class="btn primary">Save note</button></div></form>`);}
-function settings(){showModal(modalHead('Your writing, everywhere.','Quill saves on this device as you write. Keep a backup somewhere safe.')+`<section class="settings-section"><h3>Cloud folder sync</h3><p>On iPhone, choose a folder in iCloud Drive. On desktop Chrome or Edge, choose that same folder in your synced iCloud Drive. Use the same folder on every device. Sync runs while Quill is open.</p><p>Safari and mobile browsers support backup import and export instead of live folder sync.</p><div class="row wrap">${btn('connect','Connect folder','sync')}${btn('sync','Sync now','','subtle')}${btn('disconnect','Disconnect','','subtle')}</div><p id="sync-status">${connected?'Connected for this session.':'Choose your folder, or sync an existing iPhone connection.'}</p></section><section class="settings-section"><h3>Backups & recovery</h3><p>Backups include all books, notes, deleted items, and saved versions. Import merges drafts; it does not replace your library.</p><div class="row wrap">${btn('backup','Export backup','export')}${btn('import','Import backup','','subtle')}</div></section><section class="settings-section"><h3>Appearance</h3>${btn('theme','Toggle light / dark','','subtle')}</section><p class="muted" style="font-size:11px">Quill · Free local AI writing. No account or AI usage charges. Qwen downloads model files on first use; story text is processed on this device. Clearing browser data or deleting the app removes local writing. Your cloud folder is managed by its provider; “saved to folder” does not confirm delivery to another device.</p>`);}
+function cardForm(id){const c=id?find(id):null;if(c?.category==='Character'){showCharacter(id);return;}showModal(modalHead(c?'Story note':'Catch an idea.','Characters, places, research, and the details you don’t want to lose.')+`<form id="card-form" data-id="${id||''}" data-base="${c?.revision.id||''}"><label for="card-title">Title</label><input id="card-title" required maxlength="1000" value="${esc(c?.title||'')}"><label for="card-category">Type</label><select id="card-category">${['Character','Place','Idea','Research'].map(s=>`<option ${c?.category===s?'selected':''}>${s}</option>`).join('')}</select><label for="card-text">Notes</label><textarea id="card-text" rows="9">${esc(plain(c?.html||''))}</textarea>${c?`<div class="row">${btn('history','History','clock','subtle',`data-id="${id}"`)}${btn('delete','Trash','trash','subtle danger',`data-id="${id}"`)}</div>`:''}<div class="modal-actions">${btn('close','Cancel','','subtle')}<button class="btn primary">Save note</button></div></form>`);}
+function settings(){showModal(modalHead('Your writing, everywhere.','Quill saves on this device as you write. Keep a backup somewhere safe.')+`<section class="settings-section"><h3>Cloud folder sync</h3><p>On iPhone, choose a folder in iCloud Drive. On desktop Chrome or Edge, choose that same folder in your synced iCloud Drive. Use the same folder on every device. Sync runs while Quill is open.</p><p>Safari and mobile browsers support backup import and export instead of live folder sync.</p><div class="row wrap">${btn('connect','Connect folder','sync')}${btn('sync','Sync now','','subtle')}${btn('disconnect','Disconnect','','subtle')}</div><p id="sync-status">${connected?'Connected for this session.':'Choose your folder, or sync an existing iPhone connection.'}</p></section><section class="settings-section"><h3>Backups & recovery</h3><p>Backups include all books, notes, deleted items, and saved versions. Import merges drafts; it does not replace your library.</p><div class="row wrap">${btn('backup','Export backup','export')}${btn('import','Import backup','','subtle')}</div></section><section class="settings-section"><h3>Writing models</h3><p>Download local models, reclaim space, or connect your own model API.</p>${btn('manage-models','Manage Models','settings')}</section><section class="settings-section"><h3>Appearance</h3>${btn('theme','Toggle light / dark','','subtle')}</section><p class="muted" style="font-size:11px">Quill · Local models process story text on this device without usage fees. Optional API connections send story context to your chosen server and may have provider charges. Clearing browser data or deleting the app removes local writing. Your cloud folder is managed by its provider; “saved to folder” does not confirm delivery to another device.</p>`);}
 async function doSync(){if(syncing)return;syncing=true;try{await flush();const merged=await storage.sync(revisions);revisions=union(revisions,merged);connected=true;setSaved('Saved to sync folder');const status=$('#sync-status');if(status)status.textContent='Saved to your folder at '+new Date().toLocaleTimeString()+'. Your cloud provider handles delivery.';if(!modal.open&&!draft){render();}toast('Folder sync complete. All saved drafts are preserved.');}finally{syncing=false;}}
 function history(id){const d=find(id),h=heads(revisions,id);showModal(modalHead('Every draft has a place.',esc(d?.title||'Version history'))+`<p class="muted" style="font-size:12px">Restore makes a new current version. Earlier writing stays in this history. Parallel drafts can be compared here before you choose.</p>${revisions.filter(r=>r.entity===id).sort((a,b)=>b.time-a.time||b.id.localeCompare(a.id)).map(r=>`<div class="history-row"><div class="row spread"><time>${new Date(r.time).toLocaleString()}</time>${h.some(x=>x.id===r.id)?'<span class="badge">CURRENT DRAFT</span>':''}</div><strong>${esc(r.body.title)}</strong><p>${esc(plain(r.body.html||'')||r.body.plotBeats||r.body.synopsis||r.body.author||'(Empty draft)')}</p>${btn('restore-revision','Make this current','','subtle',`data-id="${r.id}"`)}</div>`).join('')}`);}
 function trash(){const deleted=all(true).filter(d=>!bookId||d.id===bookId||d.book===bookId);showModal(modalHead('Recently deleted','Nothing here is permanently removed. Restore it whenever you’re ready.')+deleted.map(d=>`<div class="history-row row spread"><div><strong>${esc(d.title)}</strong><br><small>${d.type}</small></div>${btn('restore-item','Restore','','subtle',`data-id="${d.id}"`)}</div>`).join('')+(deleted.length?'':'<p class="empty">Your trash is empty.</p>'));}
@@ -426,7 +571,8 @@ function exportMenu(){showModal(modalHead('From draft to manuscript.','Exports i
 async function exportFile(type){await flush();const b=book(),cs=chapters(),name=(b.title||'Manuscript').replace(/[^\p{L}\p{N} _-]/gu,'').slice(0,90)||'Manuscript';if(type==='print'){const html=manuscriptHTML(b,cs);if(storage.native)await storage.bridge('print',{html});else{let frame=document.createElement('iframe');frame.style.cssText='position:fixed;width:1px;height:1px;left:-9999px';frame.srcdoc=html;frame.onload=()=>{frame.contentWindow.focus();frame.contentWindow.print();setTimeout(()=>frame.remove(),60000);};document.body.append(frame);}return;}
 const content=type==='epub'?epub(b,cs):type==='docx'?docx(b,cs):type==='html'?manuscriptHTML(b,cs):[b.title,b.author||'',...cs.map(c=>c.title+'\n\n'+plain(c.html))].join('\n\n\n');const mime={epub:'application/epub+zip',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',html:'text/html',txt:'text/plain'};await storage.download(name+'.'+type,mime[type],content);toast('Manuscript export is ready.');}
 function search(query=''){const found=query.trim()?chapters().filter(c=>(c.title+' '+plain(c.html)).toLocaleLowerCase().includes(query.toLocaleLowerCase())):[];if(!$('#search-input'))showModal(modalHead('Find it in your story.')+'<input id="search-input" type="search" placeholder="Search chapter titles and text" aria-label="Search query"><div id="search-results"></div>');$('#search-results').innerHTML=found.map(c=>`<button class="outline-card" style="width:100%;text-align:left;margin-top:12px" data-action="open-chapter" data-id="${c.id}"><span><strong>${esc(c.title)}</strong><p>${esc(plain(c.html).slice(Math.max(0,plain(c.html).toLocaleLowerCase().indexOf(query.toLocaleLowerCase())-45),Math.max(0,plain(c.html).toLocaleLowerCase().indexOf(query.toLocaleLowerCase())-45)+200))}</p></span></button>`).join('')+(query&&!found.length?'<p class="empty">No chapters match that phrase.</p>':'');}
-function plotPage(b){return `<div class="content-page plot-page"><div class="page-heading"><span class="eyebrow">THE WHOLE STORY</span><h1>Plot beats</h1><p class="muted">Keep the full plot here, including the ending. The chapter writer references these notes while following the events you request for each chapter.</p></div><label for="plot-beats">Your story, from beginning to end</label><textarea id="plot-beats" class="plot-editor" maxlength="300000" placeholder="Opening: …\nInciting incident: …\nTurning points: …\nClimax: …\nEnding: …">${esc(b.plotBeats||'')}</textarea><label for="writing-style">Writing preferences <span class="muted">· optional</span></label><textarea id="writing-style" rows="3" maxlength="6000" placeholder="Viewpoint, tense, tone, or details to keep consistent…">${esc(b.writingStyle||'')}</textarea><div class="row spread wrap"><span class="saved">${esc(currentSave)}</span>${btn('history','Plot version history','clock','subtle',`data-id="${b.id}"`)}</div><p class="muted small">Long outlines and notes are condensed for the model. Your full original notes remain here and are included in backups and folder sync.</p></div>`;}
+function plotPage(b){return `<div class="content-page plot-page codex-page"><div class="page-heading"><span class="eyebrow">YOUR STORY’S SOURCE OF TRUTH</span><h1>The Codex</h1><p class="muted">Your story, its people, and the details that hold everything together. Every writing model references this book’s Codex.</p></div><nav class="codex-tabs" aria-label="Codex sections">${[['summary','Story summary'],['beats','Plot beats'],['style','Writing style'],['characters','Characters']].map(([key,label])=>btn('codex-tab',label,'',codexTab===key?'primary':'subtle',`data-tab="${key}" aria-pressed="${codexTab===key}"`)).join('')}</nav><section ${codexTab==='summary'?'':'hidden'}><label for="story-summary">Story summary</label><p class="small muted">Premise, setting, central conflict, and the ending you’re working toward.</p><textarea id="story-summary" rows="12" maxlength="300000" placeholder="What is this story about?">${esc(b.synopsis||'')}</textarea></section><section ${codexTab==='beats'?'':'hidden'}><div class="row spread wrap"><label for="plot-beats">Plot beats</label>${btn('next-beat','Generate next beat','write')}</div><p class="small muted">Plan the full story, including future reveals. Suggestions are yours to review and edit.</p><textarea id="plot-beats" class="plot-editor" maxlength="300000" placeholder="Opening: …\nInciting incident: …\nTurning points: …\nClimax: …\nEnding: …">${esc(b.plotBeats||'')}</textarea></section><section ${codexTab==='style'?'':'hidden'}><label for="writing-style">Writing style</label><textarea id="writing-style" rows="10" maxlength="6000" placeholder="Viewpoint, tense, tone, pacing, dialogue, and things to avoid…">${esc(b.writingStyle||'')}</textarea></section><section ${codexTab==='characters'?'':'hidden'}><div class="row spread wrap"><div><h2>Your cast</h2><p class="small muted">Build a character from scratch or let your writing model suggest one.</p></div>${btn('new-character','Create character','plus','primary')}</div><div class="board">${cards().filter(c=>c.category==='Character').map(c=>`<button class="note-card character-card" data-action="edit-character" data-id="${c.id}">${c.portrait?`<img src="${esc(c.portrait)}" alt="Portrait of ${esc(c.title)}">`:'<div class="portrait-placeholder" aria-hidden="true">✦</div>'}<span class="eyebrow">${esc(c.role||'Character')}</span><h3>${esc(c.title)}${c.conflicts?' ⚑':''}</h3><p>${esc(c.personality||plain(c.html||''))}</p></button>`).join('')||'<p class="muted">Every story starts with someone. Create your first character.</p>'}</div></section><div class="row spread wrap codex-footer"><span class="saved">${esc(currentSave)}</span>${btn('history','Codex history','clock','subtle',`data-id="${b.id}"`)}</div><p class="muted small">Saved with your book, backups and sync. Long Codex entries are condensed for each request; your originals remain intact.</p></div>`;}
+let codexTab='summary';
 let aiJob=null,aiReviewId=null,aiCheck=0,aiAvailable=false,aiEdit=null,aiTimer,aiSaveChain=Promise.resolve();
 const generations=()=>all().filter(d=>d.type==='card'&&d.category==='Generated draft'&&d.book===bookId&&d.chapter===entryId).sort((a,b)=>b.revision.time-a.revision.time||b.id.localeCompare(a.id));
 function aiStatus(text){const el=$('#ai-progress');if(el)el.textContent=text;}
@@ -462,17 +608,17 @@ async function showAI(id){
   const c=find(entryId);if(!c||c.deleted)throw Error('Choose a chapter first.');
   const saved=generations(),g=saved.find(g=>g.id===id)||saved[0];aiReviewId=g?.id||null;
   let preferred=storage.native?'apple':'qwen-1.7';try{preferred=localStorage.getItem('quill-ai-model')||preferred;}catch{}
-  if(g?.model)preferred=g.model;
-  if(!modelChoices.some(([key])=>key===preferred))preferred=storage.native?'apple':'qwen-1.7';
+  if(g?.model&&!localStorage.getItem('quill-ai-model'))preferred=g.model;
+  if(!modelChoices().some(([key])=>key===preferred))preferred=storage.native?'apple':'qwen-1.7';
   const body=g?bodyOf(g):{type:'card',category:'Generated draft',book:bookId,chapter:c.id,sourceRevision:c.revision.id,title:c.title,prompt:c.synopsis||'',targetWords:1500,model:preferred,outline:'',html:'',status:'Outline draft',issue:'',deleted:false};
   aiEdit={id:g?.id||uuid(),base:g?.revision.id||null,body:{...body,outline:body.outline||'',model:preferred},edits:0,saved:0};aiAvailable=false;
   modal.classList.add('ai-modal');
-  showModal(`<header class="ai-header"><div class="row spread">${btn('close','Manuscript','back','subtle','aria-label="Back to manuscript"')}<span class="badge">FREE · ON THIS DEVICE</span></div><div class="ai-heading"><h1 id="modal-title">Chapter writer</h1><p>${esc(c.title)}</p></div><ol class="ai-steps" aria-label="Writing steps"><li>1 <span>Outline & review</span></li><li>2 <span>Write chapter</span></li></ol></header><main class="ai-content"><div ${saved.length?'':'hidden'}><label for="ai-saved-drafts">Saved outlines & drafts</label><select id="ai-saved-drafts">${saved.map(d=>`<option value="${d.id}" ${d.id===g?.id?'selected':''}>${new Date(d.revision.time).toLocaleString()} · ${esc(d.status)}${d.html?' · '+format(words(d))+' words':''}</option>`).join('')}</select></div><form id="ai-form"><section class="ai-section"><div class="row spread wrap"><h2>Your chapter brief</h2>${btn('ai-plot','Plot beats','note','subtle')}</div><label for="ai-model">Writing model</label><select id="ai-model">${modelChoices.map(([key,label])=>`<option value="${key}" ${preferred===key?'selected':''}>${label}</option>`).join('')}</select><p id="ai-availability" class="small muted" role="status">Checking this device…</p>${btn('ai-check','Check again','','subtle')}<div id="qwen-updates" ${preferred==='apple'?'hidden':''}>${btn('qwen-check-update','Check Qwen updates','','subtle')}${btn('qwen-update','Download update','','subtle','id="qwen-download-update" hidden')}<p id="qwen-update-status" class="small muted">Checks for newer files for the selected Qwen model. New model families may require a Quill update.</p></div><label for="ai-prompt">What happens in this chapter?</label><textarea id="ai-prompt" required maxlength="6000" rows="4" placeholder="Describe the events, viewpoint, and where this chapter should end…">${esc(body.prompt||'')}</textarea><label for="ai-length">Approximate chapter length</label><select id="ai-length">${chapterLengths.map(n=>`<option value="${n}" ${n===(body.targetWords||1500)?'selected':''}>${format(n)} words</option>`).join('')}</select><p class="small muted">Uses your plot beats, story notes, earlier chapter synopses and the previous chapter’s ending. First, we’ll suggest an outline for you to review.</p><div class="modal-actions"><button id="ai-generate" class="btn" type="submit" disabled>${body.outline?'Generate a new outline':'Generate outline'}</button></div></section></form><section id="ai-outline-section" class="ai-section"><span class="eyebrow">STEP 1 · YOU SHAPE THE STORY</span><h2>Review your outline</h2><p class="small muted">Change the events, add details, or write your own outline. Chapter writing starts only when you approve this version.</p><label for="ai-outline">Chapter outline</label><textarea id="ai-outline" rows="9" aria-describedby="ai-outline-count" placeholder="Generate an outline above, or write the beats you want the chapter to follow…">${esc(body.outline||'')}</textarea><div class="row spread wrap small muted"><span id="ai-outline-count"></span><span id="ai-outline-saved">${g?'Saved on this device':'Changes save automatically'}</span></div><div class="modal-actions">${btn('ai-write','Approve outline & write chapter','write','primary','id="ai-write" disabled')}</div><p class="small muted">Keep Quill open during generation. You can stop and keep any text written so far.</p></section><div class="ai-job-status"><div id="ai-progress" class="ai-progress" role="status" aria-live="polite"></div>${btn('ai-stop','Stop & keep draft','','subtle','id="ai-stop" hidden')}</div><section id="ai-review" class="ai-section" ${body.html?'':'hidden'}><span class="eyebrow">STEP 2 · YOUR CHAPTER DRAFT</span><h2>Read your chapter</h2><p id="ai-issue" class="small muted">${esc(body.issue||'Review the draft before adding it to your manuscript.')}</p><textarea id="ai-draft-text" class="ai-draft-preview" aria-label="Generated chapter draft" readonly>${esc(plain(body.html||''))}</textarea><div class="modal-actions">${btn('ai-use','Use draft & edit','write','primary',`id="ai-use" ${body.html?'':'disabled'}`)}</div><p class="small muted">Your previous writing stays in version history. Use the manuscript editor to make further changes.</p></section></main>`);
+  showModal(`<header class="ai-header"><div class="row spread">${btn('close','Manuscript','back','subtle','aria-label="Back to manuscript"')}<span class="badge">YOUR MODEL · YOUR STORY</span></div><div class="ai-heading"><h1 id="modal-title">Chapter writer</h1><p>${esc(c.title)}</p></div><ol class="ai-steps" aria-label="Writing steps"><li>1 <span>Outline & review</span></li><li>2 <span>Write chapter</span></li></ol></header><main class="ai-content"><div ${saved.length?'':'hidden'}><label for="ai-saved-drafts">Saved outlines & drafts</label><select id="ai-saved-drafts">${saved.map(d=>`<option value="${d.id}" ${d.id===g?.id?'selected':''}>${new Date(d.revision.time).toLocaleString()} · ${esc(d.status)}${d.html?' · '+format(words(d))+' words':''}</option>`).join('')}</select></div><form id="ai-form"><section class="ai-section"><div class="row spread wrap"><h2>Your chapter brief</h2>${btn('ai-plot','Codex','note','subtle')}</div><label for="ai-model">Writing model</label><select id="ai-model">${modelChoices().map(([key,label])=>`<option value="${key}" ${preferred===key?'selected':''}>${esc(label)}</option>`).join('')}</select><p id="ai-availability" class="small muted" role="status">Checking this device…</p>${btn('ai-check','Check again','','subtle')}${btn('manage-models','Manage Models','settings','subtle')}<div id="qwen-updates" ${!isLocalModel(preferred)?'hidden':''}>${btn('qwen-check-update','Check model updates','','subtle')}${btn('qwen-update','Download update','','subtle','id="qwen-download-update" hidden')}<p id="qwen-update-status" class="small muted">Checks for newer files for the selected downloadable model.</p></div><label for="ai-prompt">What happens in this chapter?</label><textarea id="ai-prompt" required maxlength="6000" rows="4" placeholder="Describe the events, viewpoint, and where this chapter should end…">${esc(body.prompt||'')}</textarea><label for="ai-length">Approximate chapter length</label><select id="ai-length">${chapterLengths.map(n=>`<option value="${n}" ${n===(body.targetWords||1500)?'selected':''}>${format(n)} words</option>`).join('')}</select><p class="small muted">Uses your Codex summary, plot beats, writing style, characters, story notes, earlier chapter synopses and the previous chapter’s ending. First, we’ll suggest an outline for you to review.</p><div class="modal-actions"><button id="ai-generate" class="btn" type="submit" disabled>${body.outline?'Generate a new outline':'Generate outline'}</button></div></section></form><section id="ai-outline-section" class="ai-section"><span class="eyebrow">STEP 1 · YOU SHAPE THE STORY</span><h2>Review your outline</h2><p class="small muted">Change the events, add details, or write your own outline. Chapter writing starts only when you approve this version.</p><label for="ai-outline">Chapter outline</label><textarea id="ai-outline" rows="9" aria-describedby="ai-outline-count" placeholder="Generate an outline above, or write the beats you want the chapter to follow…">${esc(body.outline||'')}</textarea><div class="row spread wrap small muted"><span id="ai-outline-count"></span><span id="ai-outline-saved">${g?'Saved on this device':'Changes save automatically'}</span></div><div class="modal-actions">${btn('ai-write','Approve outline & write chapter','write','primary','id="ai-write" disabled')}</div><p class="small muted">Keep Quill open during generation. You can stop and keep any text written so far.</p></section><div class="ai-job-status"><div id="ai-progress" class="ai-progress" role="status" aria-live="polite"></div>${btn('ai-stop','Stop & keep draft','','subtle','id="ai-stop" hidden')}</div><section id="ai-review" class="ai-section" ${body.html?'':'hidden'}><span class="eyebrow">STEP 2 · YOUR CHAPTER DRAFT</span><h2>Read your chapter</h2><p id="ai-issue" class="small muted">${esc(body.issue||'Review the draft before adding it to your manuscript.')}</p><textarea id="ai-draft-text" class="ai-draft-preview" aria-label="Generated chapter draft" readonly>${esc(plain(body.html||''))}</textarea><div class="modal-actions">${btn('ai-use','Use draft & edit','write','primary',`id="ai-use" ${body.html?'':'disabled'}`)}</div><p class="small muted">Your previous writing stays in version history. Use the manuscript editor to make further changes.</p></section></main>`);
   modal.querySelector('.close-dialog').remove();modal.scrollTop=0;await checkAIModel();
 }
 async function checkAIModel(){
   const select=$('#ai-model');if(!select||aiJob)return;
-  const token=++aiCheck,model=select.value;aiAvailable=false;updateAIControls();$('#qwen-updates').hidden=model==='apple';$('#qwen-download-update').hidden=true;
+  const token=++aiCheck,model=select.value;aiAvailable=false;updateAIControls();$('#qwen-updates').hidden=!isLocalModel(model);$('#qwen-download-update').hidden=true;
   try{const result=await checkModel(model);if(token!==aiCheck||aiJob||!$('#ai-model')||$('#ai-model').value!==model)return;$('#ai-availability').textContent=result.message;aiAvailable=result.available;updateAIControls();}
   catch(e){if(token===aiCheck&&$('#ai-availability'))$('#ai-availability').textContent=e.message;}
 }
@@ -548,13 +694,131 @@ async function useGeneratedDraft(){
   }else{await changeFromBase(c.id,c.revision.id,{html:g.html,status:'Drafting',synopsis:c.synopsis||g.prompt});entryId=c.id;toast('Draft added. Your previous chapter is in version history.');}
   await change(g.id,{status:'Used'});aiEdit=null;modal.close();view='write';closePanels();render();
 }
-async function dismissModal(){if(aiJob){aiStatus('The writer stays open until generation finishes. Use Stop & keep draft to end it early.');return;}await flushAI();modal.close();}
+async function dismissModal(){if(extraJob){toast('Wait for this operation to finish, or use Stop.');return;}if(aiJob){aiStatus('The writer stays open until generation finishes. Use Stop & keep draft to end it early.');return;}await flushAI();await flushCharacter();modal.close();}
 modal.addEventListener('cancel',e=>{e.preventDefault();dismissModal().catch(fail);});
 modal.addEventListener('click',e=>{if(e.target!==modal)return;const r=modal.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dismissModal().catch(fail);});
 document.addEventListener('pointerdown',e=>{if(document.body.classList.contains('sidebar-open')&&!e.target.closest('.sidebar,[data-action="sidebar"]'))closePanels();});
-modal.addEventListener('close',()=>{if(modal.open)return;modal.classList.remove('ai-modal');modal.removeAttribute('aria-busy');aiEdit=null;aiCheck++;});
+modal.addEventListener('close',()=>{if(modal.open)return;modal.classList.remove('ai-modal');modal.removeAttribute('aria-busy');aiEdit=null;const characterWasOpen=!!characterEdit;characterEdit=null;aiCheck++;if(characterWasOpen&&bookId)render();});
+
+let extraJob=null,characterEdit=null,characterTimer,characterSaveChain=Promise.resolve(),suggestionId=null;
+function preferredModel(){let value;try{value=localStorage.getItem('quill-ai-model');}catch{}return modelChoices().some(([id])=>id===value)?value:storage.native?'apple':'qwen-1.7';}
+function modelSelect(id='codex-model'){return `<label for="${id}">Writing model</label><select id="${id}">${modelChoices().map(([key,label])=>`<option value="${key}" ${key===preferredModel()?'selected':''}>${esc(label)}</option>`).join('')}</select><p id="codex-model-status" class="small muted" role="status"></p>`;}
+async function codexModelStatus(){const select=$('#codex-model');if(!select)return;const value=select.value;const state=await checkModel(value);if($('#codex-model')?.value===value)$('#codex-model-status').textContent=state.message;}
+function extraStatus(text){const status=$('#extra-status');if(status)status.textContent=text;}
+function lockExtra(busy){for(const el of modal.querySelectorAll('button,input,textarea,select'))el.disabled=busy;const stop=$('#extra-stop');if(stop){stop.hidden=!busy;stop.disabled=false;}if($('#codex-suggestion'))$('#codex-suggestion').disabled=false;modal.setAttribute('aria-busy',String(busy));}
+function suggestionControls(kind){return `<label for="codex-prompt">${kind==='character'?'Character idea · optional':'Direction for the next beat · optional'}</label><textarea id="codex-prompt" rows="2" maxlength="6000" placeholder="${kind==='character'?'A reluctant guide with something to hide…':'What thread should the story follow next?'}"></textarea><div class="row wrap">${btn('generate-codex',kind==='character'?'Generate character':'Suggest next beat','write','primary',`data-kind="${kind}"`)}${btn('extra-stop','Stop','','subtle','id="extra-stop" hidden')}</div><p id="extra-status" class="small" role="status"></p><section id="codex-suggestion-section" hidden><label for="codex-suggestion">AI suggestion · review and edit</label><textarea id="codex-suggestion" rows="8"></textarea>${btn(kind==='character'?'apply-character':'apply-beat',kind==='character'?'Apply character details':'Add beat to plot','check','primary')}</section>`;}
+async function showCharacter(id){
+  await flush();modal.classList.remove('ai-modal');aiEdit=null;
+  const card=id?find(id):null;
+  characterEdit={id:card?.id||uuid(),base:card?.revision.id||null,body:card?bodyOf(card):{type:'card',category:'Character',book:bookId,title:'',html:'',portrait:'',deleted:false},edits:0,saved:0};
+  const c=characterEdit.body;suggestionId=null;
+  showModal(modalHead('Character builder','Create someone from the ground up, or ask your writing model for a starting point.')+`<div id="character-form"><div class="character-portrait"><img id="character-portrait" ${c.portrait?`src="${esc(c.portrait)}"`:'hidden'} alt="Character portrait"><div class="row wrap">${btn('generate-portrait','Generate portrait','write')}${btn('upload-portrait','Upload image','','subtle')}${btn('remove-portrait','Remove image','','subtle')}</div><input id="portrait-file" type="file" accept="image/png,image/jpeg,image/webp" hidden><p id="portrait-availability" class="small muted">Checking image creation…</p></div><label for="character-title">Name</label><input id="character-title" maxlength="1000" value="${esc(c.title)}">${characterFields.map(([key,label])=>`<label for="character-${key}">${label}</label><textarea id="character-${key}" data-character-field="${key}" rows="${['role','age'].includes(key)?1:3}" maxlength="6000">${esc(c[key]||'')}</textarea>`).join('')}<label for="character-notes">Other notes</label><textarea id="character-notes" rows="4" maxlength="100000">${esc(plain(c.html||''))}</textarea><p id="character-saved" class="small saved">${card?'Saved on this device':'Details save as you write'}</p><div class="row wrap">${btn('close','Done','check','primary')}${card?btn('history','History','clock','subtle',`data-id="${card.id}"`)+btn('delete','Trash','trash','subtle danger',`data-id="${card.id}"`):''}</div></div><details class="character-ai"><summary>Build with AI</summary>${modelSelect()}${storage.native?'<label class="check-label"><input type="checkbox" id="character-auto-portrait"> Open portrait creator after applying character</label>':''}${suggestionControls('character')}</details>`);
+  const previous=all().filter(d=>d.book===bookId&&d.category==='Codex suggestion'&&d.status==='character').sort((a,b)=>b.revision.time-a.revision.time)[0];
+  if(previous){suggestionId=previous.id;$('#codex-suggestion').value=plain(previous.html);$('#codex-suggestion-section').hidden=false;}
+  await codexModelStatus();let available=false;try{available=storage.native&&await storage.bridge('portraitStatus');}catch{}
+  if(!$('#portrait-availability'))return;
+  $('#portrait-availability').textContent=available?'Uses Apple Image Playground. Preview and choose the image; Apple’s availability and usage limits apply.':'Image Playground needs a supported iPhone/iPad with Apple Intelligence. You can upload a portrait created elsewhere.';
+  $('[data-action="generate-portrait"]').disabled=!available;
+}
+function captureCharacter(){
+  if(!characterEdit||!$('#character-title')||extraJob)return;
+  const patch={title:$('#character-title').value,html:textToHTML($('#character-notes').value)};
+  for(const [key] of characterFields)patch[key]=$('#character-'+key).value;
+  if(Object.entries(patch).every(([k,v])=>characterEdit.body[k]===v))return;
+  Object.assign(characterEdit.body,patch);characterEdit.edits++;$('#character-saved').textContent='Saving…';clearTimeout(characterTimer);characterTimer=setTimeout(()=>flushCharacter().catch(fail),1000);
+}
+function flushCharacter(){
+  clearTimeout(characterTimer);characterSaveChain=characterSaveChain.catch(()=>{}).then(async()=>{
+    const d=characterEdit;if(!d||d.edits===d.saved)return;
+    const edit=d.edits,r=revise(d.id,{...d.body,title:d.body.title.trim()||'Unnamed character'},d.base?[d.base]:[]);
+    try{await persist([r]);d.base=r.id;d.saved=edit;if($('#character-saved'))$('#character-saved').textContent=d.edits===edit?'Saved on this device':'Saving…';}
+    catch(e){if($('#character-saved'))$('#character-saved').textContent='Save failed · keep this screen open';throw e;}
+  });return characterSaveChain;
+}
+async function setPortrait(data){if(!characterEdit||!$('#character-portrait'))return;characterEdit.body.portrait=data||'';characterEdit.edits++;const image=$('#character-portrait');image.hidden=!data;if(data)image.src=data;else image.removeAttribute('src');await flushCharacter();}
+async function generatePortrait(){
+  if(extraJob)return;captureCharacter();await flushCharacter();extraJob={kind:'portrait'};lockExtra(true);extraStatus('Choose a portrait in Image Playground…');
+  try{const image=await storage.bridge('portraitGenerate',{prompt:portraitPrompt(characterEdit.body)},{timeout:1800000});if(image)await setPortrait(image);extraStatus(image?'Portrait saved.':'Portrait creation cancelled.');}
+  finally{extraJob=null;lockExtra(false);if($('#extra-stop'))$('#extra-stop').hidden=true;}
+}
+async function importPortrait(file){
+  if(!file)return;if(file.size>15000000||!['image/jpeg','image/png','image/webp'].includes(file.type))throw Error('Choose a JPEG, PNG or WebP under 15 MB.');
+  const url=URL.createObjectURL(file);
+  try{const image=new Image();image.src=url;await image.decode();const scale=Math.min(1,512/Math.max(image.naturalWidth,image.naturalHeight)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,0,0,canvas.width,canvas.height);await setPortrait(canvas.toDataURL('image/jpeg',0.82));}finally{URL.revokeObjectURL(url);}
+}
+async function showNextBeat(){
+  await flush();modal.classList.remove('ai-modal');aiEdit=null;suggestionId=null;
+  showModal(modalHead('The next story beat','Follow the threads already in your Codex. Nothing is added to the plot until you choose it.')+modelSelect()+suggestionControls('beat'));
+  const saved=all().filter(d=>d.book===bookId&&d.category==='Codex suggestion'&&d.status==='beat').sort((a,b)=>b.revision.time-a.revision.time)[0];
+  if(saved){suggestionId=saved.id;$('#codex-suggestion').value=plain(saved.html);$('#codex-suggestion-section').hidden=false;}
+  await codexModelStatus();
+}
+async function runCodex(kind){
+  if(extraJob||aiJob)return;captureCharacter();await flush();
+  const model=$('#codex-model').value,request=$('#codex-prompt').value,controller=new AbortController();
+  const b=book(),cs=chapters(),c=cs.at(-1)||{id:'codex',title:'Codex'};
+  const context=buildChapterContext(b,c,cs.length?cs:[c],cards(),plain);
+  context.earlier=cs.map(c=>c.title+': '+(c.synopsis||'')).join('\n');
+  context.prompt=request||(kind==='character'?'Invent a new character who belongs in this story.':'Suggest the next beat after the last listed plot event.');
+  if(kind==='character')context.prompt+='\nPreserve these details already supplied for this character:\n'+characterContext(characterEdit.body,plain);
+  const id=await create({type:'card',book:bookId,category:'Codex suggestion',title:kind==='character'?'Character suggestion':'Next plot beat',status:kind,html:'',prompt:request,model});suggestionId=id;
+  const record=find(id),job={id,base:record.revision.id,body:bodyOf(record),kind:'codex',controller,text:'',saves:Promise.resolve(),lastSave:0};extraJob={controller,kind};lockExtra(true);$('#codex-suggestion-section').hidden=false;$('#codex-suggestion').value='';extraStatus('Reading the Codex…');let writer;
+  try{writer=await createWriter(model,{signal:controller.signal,onStatus:extraStatus});const text=await generateCodex(kind,context,{request:writer.request,signal:controller.signal,onStatus:extraStatus,onText:text=>{if(!controller.signal.aborted){$('#codex-suggestion').value=text;job.text=text;if(Date.now()-job.lastSave>5000){job.lastSave=Date.now();checkpointAI(job).catch(fail);}}}});$('#codex-suggestion').value=text;extraStatus('Suggestion ready. Review and edit it before applying.');}
+  catch(e){extraStatus(controller.signal.aborted?'Stopped. Any suggestion so far is kept.':e.message);}
+  finally{writer?.close();job.text=$('#codex-suggestion').value;try{await checkpointAI(job);}catch(e){extraStatus('Suggestion could not be saved. Copy the text before closing.');throw e;}finally{extraJob=null;lockExtra(false);}}
+}
+async function applyCharacter(){
+  if(extraJob)return;const data=parseCharacter($('#codex-suggestion').value),portrait=$('#character-auto-portrait')?.checked;
+  $('#character-title').value=data.title;for(const [key] of characterFields)$('#character-'+key).value=data[key];captureCharacter();await flushCharacter();if(suggestionId)await change(suggestionId,{status:'Used character',html:textToHTML($('#codex-suggestion').value)});extraStatus('Character details saved. You can edit every field.');if(portrait)await generatePortrait();
+}
+async function applyBeat(){
+  if(extraJob)return;const text=$('#codex-suggestion').value.trim();if(!text)throw Error('Write or generate a beat first.');await flush();const b=book();await change(b.id,{plotBeats:[b.plotBeats||'',text].filter(Boolean).join('\n\n')});if(suggestionId)await change(suggestionId,{status:'Used beat',html:textToHTML(text)});modal.close();codexTab='beats';view='plot';render();toast('Beat added to your Codex.');
+}
+const sizeLabel=bytes=>bytes>=1e9?(bytes/1e9).toFixed(2)+' GB':(bytes/1e6).toFixed(1)+' MB';
+async function manageModels(){
+  if(aiJob||extraJob)return;await flush();aiEdit=null;characterEdit=null;modal.classList.remove('ai-modal');
+  showModal(modalHead('Manage Models','Choose how Quill writes. Downloaded models stay on this device; API connections use your chosen server.')+`<p id="extra-status" class="small" role="status">Checking model storage…</p>${btn('extra-stop','Stop download','','subtle','id="extra-stop" hidden')}<div id="model-list"></div><section class="settings-section"><h3>Your API connections</h3><p>Connect a model through an OpenAI-compatible chat API (including compatible local servers), or an Anthropic Messages API. Your provider’s model ID determines which model runs. Other API formats need an adapter.</p><div id="api-list">${connections().map(p=>`<div class="model-row"><div><strong>${esc(p.name)}</strong><p>${esc(p.model)} · ${esc(new URL(p.endpoint).host)}</p></div><div class="row wrap">${btn('use-model','Use','','subtle',`data-id="${p.id}"`)}${btn('edit-api','Edit','','subtle',`data-id="${p.id}"`)}${btn('delete-api','Remove','','subtle danger',`data-id="${p.id}"`)}</div></div>`).join('')}</div>${btn('new-api','Connect a model API','plus')}<p class="small muted">API generation sends your prompt and relevant Codex context to that server. Provider charges may apply. Keys and model downloads are excluded from book backups.</p></section><p class="small muted">Apple Intelligence storage is managed by iOS. Deleting a downloaded model removes its weights, older copies and partial downloads; your books and drafts remain.</p>`);
+  const rows=await modelStorage();if(!$('#model-list'))return;
+  $('#model-list').innerHTML=`<div class="model-row"><div><strong>Apple Intelligence</strong><p>Built into supported iPhone/iPad devices · managed in iOS Settings</p></div>${storage.native?btn('use-model','Use','','subtle','data-id="apple"'):''}</div>`+localModels.filter(m=>storage.native?m.native!==false:!!m.web).map(m=>{const r=rows.find(r=>r.id===m.id)||{};return `<div class="model-row"><div><strong>${esc(m.name)}</strong><p>${r.installed?'Downloaded':r.partial?'Partial download':'Not downloaded'} · ${r.bytes?sizeLabel(r.bytes)+(r.estimated?' measured · some files unreported':' used'):r.estimated?'Cached · size unavailable':'about '+m.size+' download'}<br>${esc(m.description)}${m.id.startsWith('llama-')?' · Built with Llama':''}</p></div><div class="row wrap">${btn('use-model','Use','','subtle',`data-id="${m.id}"`)}${btn('install-model',r.installed?'Check & update':'Download','','',`data-id="${m.id}"`)}${r.bytes||r.installed||r.partial||r.estimated?btn('delete-model','Delete','','subtle danger',`data-id="${m.id}"`):''}</div></div>`;}).join('');extraStatus('Selected: '+(modelChoices().find(([id])=>id===preferredModel())?.[1]||''));
+}
+async function installModel(id){
+  if(extraJob)return;const controller=new AbortController();extraJob={controller,kind:'model'};lockExtra(true);
+  try{const state=await checkModel(id);if(!state.available)throw Error(state.message);await updateQwen(id,{signal:controller.signal,onStatus:extraStatus});extraStatus('Download complete.');toast('Model installed.');}
+  catch(e){toast(controller.signal.aborted?'Download stopped. Existing installed models are kept.':e.message);}
+  finally{extraJob=null;lockExtra(false);await manageModels();}
+}
+function apiForm(id){
+  const p=connections().find(p=>p.id===id)||{format:'openai'};
+  showModal(modalHead(p.id?'Edit API connection':'Connect a model API','Use the API base URL supplied by your provider, including its version path, and the exact model ID.')+`<form id="api-form" data-id="${p.id||''}"><label for="api-name">Connection name</label><input id="api-name" required maxlength="100" value="${esc(p.name||'')}" placeholder="My writing model"><label for="api-format">API format</label><select id="api-format"><option value="openai" ${p.format==='openai'?'selected':''}>OpenAI-compatible chat completions</option><option value="anthropic" ${p.format==='anthropic'?'selected':''}>Anthropic Messages</option></select><label for="api-endpoint">API base URL</label><input id="api-endpoint" type="url" required value="${esc(p.endpoint||'')}" placeholder="https://your-provider.example/v1" autocapitalize="none" spellcheck="false"><label for="api-model-id">Model ID</label><input id="api-model-id" required maxlength="200" value="${esc(p.model||'')}" placeholder="Provider’s exact model ID" autocapitalize="none" spellcheck="false"><label for="api-key">API key · optional for unauthenticated servers</label><input id="api-key" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="${p.hasKey?'Saved in Keychain · leave blank to keep':'Paste your key'}"><label class="check-label"><input type="checkbox" id="api-clear-key"> Remove saved key</label><p class="small muted">${storage.native?'Keys are saved in this iPhone’s Keychain. HTTPS is required.':'Keys remain in this tab’s session only. Paste them again after closing it. Your server must allow browser requests (CORS).'} Changing the server URL clears the old key unless you enter a new one.</p><div class="row wrap"><button class="btn primary" type="submit">Save connection</button>${btn('test-api','Save & test','','subtle')}${btn('manage-models','Back','','subtle')}</div><p id="extra-status" class="small" role="status"></p></form>`);
+}
+async function saveAPI(test=false){
+  if(extraJob)return;const p=await saveConnection({id:$('#api-form').dataset.id||undefined,name:$('#api-name').value,endpoint:$('#api-endpoint').value,model:$('#api-model-id').value,format:$('#api-format').value},$('#api-key').value,$('#api-clear-key').checked);
+  $('#api-form').dataset.id=p.id;$('#api-key').value='';$('#api-clear-key').checked=false;
+  if(!test){await manageModels();toast('API connection saved. Choose Use to select it.');return;}
+  const controller=new AbortController();extraJob={controller,kind:'test'};lockExtra(true);let writer;
+  try{writer=await createWriter(p.id,{signal:controller.signal,onStatus:extraStatus});await writer.request({instructions:'Reply briefly.',prompt:'Reply with OK.',maxTokens:100});extraStatus('Connected successfully. This test sent only “Reply with OK,” without book content.');}
+  catch(e){extraStatus(e.message);}finally{writer?.close();extraJob=null;lockExtra(false);}
+}
+const codexActions={
+  'codex-tab':async el=>{await flush();codexTab=el.dataset.tab;render();},
+  'new-character':()=>showCharacter(),'edit-character':el=>showCharacter(el.dataset.id),
+  'next-beat':showNextBeat,'generate-codex':el=>runCodex(el.dataset.kind),'apply-character':applyCharacter,'apply-beat':applyBeat,
+  'generate-portrait':generatePortrait,'upload-portrait':()=>$('#portrait-file').click(),'remove-portrait':()=>setPortrait(''),
+  'manage-models':manageModels,'install-model':el=>installModel(el.dataset.id),
+  'extra-stop':()=>{extraJob?.controller?.abort();extraStatus('Stopping…');},
+  'use-model':el=>{localStorage.setItem('quill-ai-model',el.dataset.id);extraStatus('Selected: '+modelChoices().find(([id])=>id===el.dataset.id)?.[1]);toast('Writing model selected.');},
+  'delete-model':el=>{showModal(modalHead('Delete downloaded model?','This removes all downloaded versions and partial files for this model. Your books, Codex and generated drafts stay saved.')+`<div class="row wrap">${btn('confirm-model-delete','Delete model','trash','danger',`data-id="${el.dataset.id}"`)}${btn('manage-models','Keep model','','primary')}</div>`);},
+  'confirm-model-delete':async el=>{await deleteModel(el.dataset.id);if(preferredModel()===el.dataset.id)localStorage.removeItem('quill-ai-model');await manageModels();toast('Model files deleted. You can download it again later.');},
+  'new-api':()=>apiForm(),'edit-api':el=>apiForm(el.dataset.id),'test-api':()=>saveAPI(true),
+  'delete-api':el=>{showModal(modalHead('Remove API connection?','The connection and its saved key will be removed from this device. Writing stays saved.')+`<div class="row wrap">${btn('confirm-api-delete','Remove connection','','danger',`data-id="${el.dataset.id}"`)}${btn('manage-models','Keep connection','','primary')}</div>`);},
+  'confirm-api-delete':async el=>{await deleteConnection(el.dataset.id);await manageModels();}
+};
+document.addEventListener('input',e=>{if(e.target.closest('#character-form'))captureCharacter();});
+document.addEventListener('change',e=>{if(e.target.id==='codex-model'){localStorage.setItem('quill-ai-model',e.target.value);codexModelStatus().catch(fail);}if(e.target.id==='portrait-file')importPortrait(e.target.files[0]).catch(fail);});
+document.addEventListener('submit',e=>{if(e.target.id==='api-form'){e.preventDefault();saveAPI().catch(fail);}});
 
 const actions={
+  ...codexActions,
   'qwen-check-update':checkAIUpdate,'qwen-update':downloadAIUpdate,
   'write-ai':async()=>{await flush();await showAI();},'ai-check':checkAIModel,'ai-stop':stopAI,'ai-use':useGeneratedDraft,'ai-write':()=>startAI('chapter'),
   'ai-plot':async()=>{await flush();modal.close();view='plot';closePanels();render();},
@@ -584,17 +848,17 @@ document.addEventListener('click',async e=>{const el=e.target.closest('[data-act
 document.addEventListener('mousedown',e=>{if(e.target.closest('[data-format]'))e.preventDefault();});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-format]');if(!b||!$('#editor'))return;$('#editor').focus();document.execCommand(b.dataset.format,false);capture();});
 document.addEventListener('change',async e=>{try{if(['ai-model','ai-length'].includes(e.target.id))captureAI();if(e.target.id==='ai-model'){try{localStorage.setItem('quill-ai-model',e.target.value);}catch{}await checkAIModel();}if(e.target.id==='ai-saved-drafts')await showAI(e.target.value);if(e.target.id==='paragraph-style'){ $('#editor').focus();document.execCommand('formatBlock',false,e.target.value);capture();}if(e.target.id==='chapter-status'){if(draft){draft.body.status=e.target.value;draft.edits++;await flush();}else if(entryId){await change(entryId,{status:e.target.value});render();}}if(e.target.id==='synopsis'){if(draft){draft.body.synopsis=e.target.value;draft.edits++;await flush();}else if(entryId){await change(entryId,{synopsis:e.target.value});render();}}if(e.target.id==='import-file'&&e.target.files[0]){const f=e.target.files[0];if(f.size>100000000)throw Error('This backup exceeds 100 MB.');await flush();await importBackup(await f.text());e.target.value='';}}catch(err){fail(err);}});
-document.addEventListener('input',e=>{if(['ai-prompt','ai-outline'].includes(e.target.id))captureAI();if(['plot-beats','writing-style'].includes(e.target.id)&&draft?.body.type==='book'){draft.body[e.target.id==='plot-beats'?'plotBeats':'writingStyle']=e.target.value;draft.edits++;queueSave();}if(e.target.id==='search-input')search(e.target.value);if(e.target.id==='synopsis'&&draft){draft.body.synopsis=e.target.value;draft.edits++;queueSave();}});
+document.addEventListener('input',e=>{if(['ai-prompt','ai-outline'].includes(e.target.id))captureAI();if(['story-summary','plot-beats','writing-style'].includes(e.target.id)&&draft?.body.type==='book'){draft.body[e.target.id==='plot-beats'?'plotBeats':e.target.id==='story-summary'?'synopsis':'writingStyle']=e.target.value;draft.edits++;queueSave();}if(e.target.id==='search-input')search(e.target.value);if(e.target.id==='synopsis'&&draft){draft.body.synopsis=e.target.value;draft.edits++;queueSave();}});
 document.addEventListener('submit',async e=>{e.preventDefault();try{if(e.target.id==='ai-form'){await startAI();return;}if(e.target.id==='chapter-form'){await changeFromBase(e.target.dataset.id,e.target.dataset.base,{status:$('#details-status').value,synopsis:$('#details-synopsis').value});modal.close();render();}if(e.target.id==='book-form'){await flush();const isNew=e.target.dataset.new==='true',b={title:$('#book-title').value.trim()||'Untitled novel',author:$('#book-author').value.trim(),goal:Number($('#book-goal').value)||80000,dailyGoal:Number($('#daily-goal').value)||500,color:$('#book-color').value};if(isNew){bookId=await create({type:'book',...b});entryId=await create({type:'chapter',book:bookId,title:'Chapter One',html:'',synopsis:'',status:'To write',order:1000});sessionStart=0;view='write';}else await changeFromBase(bookId,e.target.dataset.base,b);modal.close();render();}if(e.target.id==='card-form'){const id=e.target.dataset.id,b={title:$('#card-title').value.trim(),category:$('#card-category').value,html:$('#card-text').value.split('\n').map(p=>'<p>'+esc(p)+'</p>').join('')};if(id)await changeFromBase(id,e.target.dataset.base,b);else await create({type:'card',book:bookId,...b});modal.close();render();}}catch(err){fail(err);}});
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();flush().then(()=>toast('Saved on this device.')).catch(fail);}if(e.key==='Escape'){document.body.classList.remove('focus');closePanels();}});
 window.quillFlush=flush;
 window.addEventListener('pagehide',()=>flush().catch(()=>{}));
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){flush().catch(()=>{});if(aiJob)stopAI();}});
-window.addEventListener('beforeunload',e=>{if(aiJob||(draft&&draft.edits!==draft.saved)||(aiEdit&&aiEdit.edits!==aiEdit.saved)){e.preventDefault();e.returnValue='';}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){flush().catch(()=>{});if(aiJob)stopAI();if(extraJob?.controller)extraJob.controller.abort();}});
+window.addEventListener('beforeunload',e=>{if(aiJob||extraJob||(characterEdit&&characterEdit.edits!==characterEdit.saved)||(draft&&draft.edits!==draft.saved)||(aiEdit&&aiEdit.edits!==aiEdit.saved)){e.preventDefault();e.returnValue='';}});
 const channel=typeof BroadcastChannel!=='undefined'?new BroadcastChannel('quill-library'):null;
 channel?.addEventListener('message',async()=>{try{await flush();revisions=union(revisions,await storage.load());if(!modal.open&&!draft)render();}catch(e){fail(e);}});
 window.addEventListener('error',e=>{if(e.message)toast('Something interrupted the editor. Export a backup before reloading.');});
-async function start(){try{if(localStorage.getItem('quill-theme')==='dark')document.body.classList.add('dark');}catch{}try{await storage.openStorage();revisions=await storage.load();if(!revisions.length)await persist(sample());render();if(!storage.native&&'serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});if(storage.native)storage.bridge('ready').then(r=>{connected=!!r.connected;if(connected)doSync().catch(()=>setSaved('Sync paused · drafts saved locally'));}).catch(()=>{});}catch(e){app.innerHTML=`<div class="loading"><h1>Your drafts need attention.</h1><p>${esc(e.message)}</p><p>Please keep this app’s data. Opening failed; nothing has been replaced.</p></div>`;}}
+async function start(){try{await loadConnections();}catch(e){console.warn('API connections unavailable:',e.message);}try{if(localStorage.getItem('quill-theme')==='dark')document.body.classList.add('dark');}catch{}try{await storage.openStorage();revisions=await storage.load();if(!revisions.length)await persist(sample());render();if(!storage.native&&'serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});if(storage.native)storage.bridge('ready').then(r=>{connected=!!r.connected;if(connected)doSync().catch(()=>setSaved('Sync paused · drafts saved locally'));}).catch(()=>{});}catch(e){app.innerHTML=`<div class="loading"><h1>Your drafts need attention.</h1><p>${esc(e.message)}</p><p>Please keep this app’s data. Opening failed; nothing has been replaced.</p></div>`;}}
 setInterval(()=>{if(connected&&!modal.open)doSync().catch(e=>{setSaved('Sync paused · drafts saved locally');console.warn(e);});},60000);
 start();
 })();
