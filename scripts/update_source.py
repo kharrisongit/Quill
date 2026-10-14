@@ -127,6 +127,11 @@ def main():
     if len(matches) > 1:
         raise ValueError("Source has duplicate app bundle identifiers")
     app = matches[0] if matches else template
+    # Refresh the public listing without replacing release-specific assets,
+    # binary metadata, permissions, or version history with template defaults.
+    for field in ("name", "developerName", "subtitle", "localizedDescription", "tintColor", "category"):
+        if field in template:
+            app[field] = template[field]
     if args.size <= 0:
         raise ValueError("IPA size must be positive")
 

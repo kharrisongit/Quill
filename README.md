@@ -1,88 +1,111 @@
 # Quill
 
-A calm, offline novel-writing workspace for **iPhone, iPad, and the browser**. This is Quill's own repository: the app, website, release workflow, and AltStore feed all live here.
+**Your story, one beat at a time.**
 
-**[Open Quill in your browser](https://kharrisongit.github.io/Quill/)** · **[Download the iPhone app](https://github.com/kharrisongit/Quill/releases/latest)**
+Quill is a novel-writing workspace for **iPhone, iPad, and the browser**. Build a bookshelf, keep your story's world in its Codex, and move between writing by hand and AI assistance whenever you need it. Your manuscript stays on your device by default.
 
-Inspired by the book-centered workflow of Reedsy Studio, with an original interface and no affiliation with Reedsy.
+**[Open Quill in your browser](https://kharrisongit.github.io/Quill/)** · **[Download the iPhone app](https://github.com/kharrisongit/Quill/releases/latest)** · **[kharrison Apps AltStore source](https://raw.githubusercontent.com/kharrisongit/utube/main/source/apps.json)**
 
-## Writing tools
+## A bookshelf of your own
 
-- Multiple books, author names, cover colors, manuscript goals, and session goals.
-- Chapter sidebar, reordering, outline, status, and synopsis.
-- Rich-text prose with headings, bold, italic, underline, lists, quotations, scene breaks, undo/redo, focus mode, and platform spell checking.
-- Character, place, idea, and research cards.
-- Manuscript search and word counts.
-- Automatic local saving, saved revision history, explicit parallel-draft resolution, and recoverable deleted books/chapters/notes.
-- DOCX, EPUB 3, HTML, TXT, print/PDF, and full JSON backups. Export uses the current draft of each chapter; review any parallel drafts before exporting.
-- Light/dark appearance, responsive iPhone layout, and offline browser caching after the first successful online visit.
+- An illustrated home screen with **BOOKSHELF** and **SETTINGS**.
+- Every book appears on an animated shelf with its own title, cover color, and optional uploaded cover.
+- Open a book to reach **CODEX**, **WRITE!**, and that book's **DRAFTS**.
+- Custom artwork, book-opening transitions, recognizable action icons, light and dark appearance, and reduced-motion support.
+- Settings covers shared preferences, model management, API connections, and backup/sync. Drafts belong to individual books.
 
-A small sample novel is included so the workspace can be explored immediately. Create **New book** to start your own.
+A small sample novel is included so you can explore immediately. Choose **New book** to start your own.
 
-## Codex and characters
+## Write at your own pace
 
-Every book has a **Codex** with **Story summary**, **Plot beats**, **Writing style**, and **Characters**. Existing book summaries, plot beats, and Character cards are reused without destructive migration. Character profiles support manual creation, AI suggestions, editable structured details, revision history, and portraits. Images are resized to 512 px and included in revisions/backups/sync; they are never sent to the text model.
+The normal manuscript editor is the default. Write freely with headings, bold, italic, underline, lists, quotations, scene breaks, undo/redo, focus mode, and platform spell checking. Organize sections with titles, synopses, status, reordering, manuscript search, word counts, and writing goals.
 
-**Generate next beat** proposes one beat for review; **Add beat to plot** appends the edited suggestion. Character suggestions also require **Apply character details**. Chapter outlines, chapter prose, characters, and next beats share the Codex context builder. Long material is condensed without changing originals.
+When you want help:
 
-On supported iPhones/iPads, **Generate portrait** opens Apple Image Playground with the character’s appearance. The user previews and accepts an image; manual characters use the same button. Apple controls availability and usage limits. No separate API key or Quill backend is required. Image upload remains available everywhere. This uses the Image Playground UI API, not the deprecated non-UI ImageCreator API.
+1. Choose **Generate** to open the chapter beat planner. Write a map yourself or ask your selected model for a suggestion, then edit the plan.
+2. Save the plan to add empty beats after your existing prose. Generate each beat individually when you're ready.
+3. Use **Show beats** to reveal editable blocks with their own directions, generation controls, and **Revise with AI** actions. **Hide beats** returns to continuous writing.
+4. Enter the next beat's prompt below the manuscript to generate right on the writing page, or add a blank beat and write it yourself.
+5. Select a word, sentence, or paragraph and choose **Edit selection with AI** for a focused change.
 
-## Models and connections
+Review generated text before applying it. Quill keeps saved drafts and revisions, preserves partial output when generation is stopped, and prevents stale suggestions from replacing writing that changed during a request. A prose request generates one beat at a time; it does not automatically continue through the chapter. Word targets are approximate.
 
-Open **Manage Models** from a book’s sidebar or Settings. Download, update, select or delete individual models. Deletion releases loaded weights and removes that model’s current, older and partial downloads without removing manuscripts. iPhone storage reports allocated bytes; browsers measure available cache headers and label unreported sizes. Apple Intelligence storage is managed in iOS Settings.
+## The Codex: your story's reference
 
-- Native: Apple Intelligence, Qwen 3 0.6B/1.7B, Llama 3.2 1B/3B, Gemma 3 1B.
-- Browser with WebGPU: Qwen 3 0.6B/1.7B, Llama 3.2 1B/3B, SmolLM2 1.7B.
-- Model architectures and conversions must be supported by the pinned runtime. SmolLM2’s verified small browser conversion is offered on the web; Gemma’s integration is native-only. Larger models require more device memory. Built with Llama; models retain their respective [Llama](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct/blob/main/LICENSE.txt), [Gemma](https://ai.google.dev/gemma/terms), [Qwen](https://huggingface.co/Qwen/Qwen3-0.6B/blob/main/LICENSE), and [SmolLM2](https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B-Instruct/blob/main/LICENSE) terms.
+Each book has its own **Story summary**, **Plot beats**, **Writing style**, **Characters**, and **Plot holes**. Writing tools draw on the Codex and relevant manuscript context, with long material condensed to fit the chosen model.
 
-**Connect a model API** supports OpenAI-compatible chat completions (including compatible local servers) and Anthropic Messages. Supply a display name, HTTPS base URL including the version path, model ID, and optional API key. Save & test sends a short test without book data. Other HTTP formats need an adapter. Provider charges may apply. The browser requires provider CORS support and also accepts HTTP localhost; the iPhone app uses HTTPS URLSession requests.
+- **Characters:** build profiles yourself or generate editable suggestions. Record appearance, personality, backstory, motivation, relationships, and character arcs.
+- **Portraits:** upload a character image anywhere, or use **Generate portrait** with Apple Image Playground on supported iPhones and iPads. Manually created characters can use the same portrait tool.
+- **Generate next beat:** ask for a proposed story development, edit it, and add it to your plot when ready.
+- **Update from manuscript:** read the manuscript for missing context, developments, and character details. Review and edit proposed additions before saving. Existing character details are retained; ambiguous name matches need review.
+- **Plot-hole review:** scan for possible contradictions and missing causal links, review the evidence and suggested fixes, and mark findings **Open**, **Resolved**, or **Dismissed**. Findings stay separate from established story facts.
 
-API profiles are device settings, excluded from book backups and sync. iPhone keys are stored in device-only Keychain items. Browser keys use sessionStorage, so must be entered again in a new tab session. Changing an endpoint clears its old key unless a new one is supplied. Requests reject redirects; keys and provider error bodies are not logged. Using an API model sends prompts and relevant Codex context to the chosen server, unlike local models.
+Scans read every nonempty manuscript section in bounded passages. Longer books can take many model requests. AI can misread deliberate mysteries or miss inconsistencies, so findings remain suggestions for the author to assess.
 
-## Chapter writing
+## The whole book, from first page to last
 
-Open a book’s **Codex → Plot beats** section to save its complete plot and optional writing preferences. These autosave with the book and are included in backup, sync and version history. In a chapter, choose **Write chapter**, select a model, enter the events for that chapter and choose an approximate length (500–3,000 words). The writer opens as a full-screen workspace. Choose **Generate outline**, edit the proposed beats and ending, then choose **Approve outline & write chapter**. No chapter prose is generated before that explicit approval; you can also type your own outline.
+Add and reorder **title page, copyright, dedication, epigraph, contents, foreword, preface, introduction, prologue, chapters, interludes, epilogue, afterword, acknowledgments, appendix, glossary, bibliography, about the author**, and custom sections.
 
-- **Apple Intelligence**: iPhone/iPad with iOS 26+, a supported device, and Apple Intelligence enabled and ready. No separate Quill model download.
-- **Qwen 3 1.7B / 0.6B**: selectable in the native app and supported WebGPU browsers. Native inference uses MLX; browsers use WebLLM in a worker. First use downloads approximately 1 GB / 400 MB on iPhone, or 1.2 GB / 0.5 GB in the browser. Runtime GPU memory requirements are larger than the downloads. Older or low-memory devices may only handle the smaller model.
+Editable templates help with the title page, copyright page, and contents. The contents template is a snapshot of the current section titles. All sections export together; an explicit title page replaces the automatically generated export title page.
 
-All built-in local text models have no AI API or per-chapter fees. Qwen downloads require internet; native installed models load locally thereafter. Browser caches may be cleared by the browser, so offline availability is not guaranteed. Keep the app/tab open while writing. Backgrounding pauses the workflow by stopping it and keeping saved partial text.
+Export **Word (.docx), EPUB, formatted HTML, plain text**, or use **print/PDF**. Full JSON backups preserve your workspace, including notes, images, and revision history. Exports use each section's current draft; review any parallel versions before exporting.
 
-The writer reads the full plot, story notes, earlier chapter synopses and the preceding chapter’s ending. Long planning material is condensed, with all chunks read, before the chapter is generated in connected parts. The full original plot is never replaced by the model’s summary. A word target is approximate, and small local models can still make continuity and prose mistakes.
+## Drafts and storage
 
-Outlines autosave as you edit and survive reopening. Keep an approved outline within the visible 2,400-character limit so it can be sent unchanged with each prose request. Overlong generated outlines are shown in full for you to shorten; Quill never silently summarizes an approved outline. Editing the inputs of a finished draft creates a separate attempt.
+Open **DRAFTS** inside a book to review saved beat maps, AI writing attempts, and Codex suggestions. Search, filter, export, and select drafts for permanent deletion when you no longer need them.
 
-Outlines and generated drafts are saved separately from manuscript chapters, including partial results after stopping or an error. **Use draft & edit** creates a manuscript revision only after review. If the chapter changed while the draft was being written, Quill adds a separate chapter instead of replacing it. Older generated drafts remain selectable in the writing panel.
+Draft cleanup removes the selected text and its saved checkpoints while preserving manuscript text and Codex details already applied. Compact deletion records prevent older backups or late synced edits from restoring discarded drafts. Previously exported backups retain their own copies. Keep all synced devices updated for consistent cleanup.
 
-**Check model updates** checks the selected model’s repository revision. **Download update** installs a separate pinned revision and advances the active version only after it loads successfully; a failed or cancelled update preserves the installed pointer. New architectures/model families require an app integration update. Models are not included in manuscript exports or backups.
+Normal manuscript revision history and recoverable deleted books, sections, and notes remain available separately.
 
-Tapping outside a sidebar or dialog dismisses it. The full-screen writer remains open during outline/chapter generation or model downloads; **Stop & keep draft** ends the operation deliberately. Ordinary dialog close buttons and Escape follow the same rule.
+## Choose your writing model
 
-## iPhone installation
+**Manage Models** lets you select, download, update, or remove models. Downloads show a percentage beside the model name and a progress bar. Storage information helps you decide what to keep; deletion removes the model's installed files, older copies, and partial downloads without deleting your books.
 
-Download `Quill.ipa` from this repository's latest release and open it in **AltStore Classic**. AltStore signs it with your account. The app requires iOS 16 or later; installation/refresh restrictions depend on your AltStore setup.
+| Platform | Built-in choices |
+| --- | --- |
+| iPhone / iPad | Apple Intelligence; Qwen 3 0.6B and 1.7B; Llama 3.2 1B and 3B; Gemma 3 1B |
+| Compatible WebGPU browser | Qwen 3 0.6B and 1.7B; Llama 3.2 1B and 3B; SmolLM2 1.7B |
 
-Quill’s component feed (also imported by the shared **kharrison Apps** source): `https://raw.githubusercontent.com/kharrisongit/Quill/main/source/apps.json`
+Apple Intelligence requires a supported device with iOS 26 or later and the feature enabled. Its downloads are managed by iOS. Other local models need an initial download and sufficient storage and memory; larger models need more memory. Native installed models run locally without AI usage fees. Browser offline availability depends on retained caches. Apple controls Image Playground availability and usage limits.
 
-The app bundles the complete browser workspace inside a native WKWebView shell. It opens offline, persists revisions as atomic files in Application Support, and adds native Files selection, sharing, importing, and printing. It has its own bundle ID: `com.kharrison.quill`.
+**Connect a model API** supports OpenAI-compatible Chat Completions and Anthropic Messages. Supply a display name, HTTPS base URL, model ID, and optional API key, then save and test the connection. Compatible local servers can also be used. Other API formats require an adapter; browser connections require CORS support and may use HTTP localhost. Provider charges may apply.
 
-## Saving and sync
+API connections are device settings, excluded from book backups and sync. iPhone keys use device-only Keychain storage; browser keys last for the tab session. API generation sends relevant story text to the server you choose. Keep Quill open during generation; backgrounding stops the workflow and retains saved partial text.
 
-Writing stays on your device by default. The browser uses IndexedDB. The iPhone app uses native files. The public GitHub repository and Pages hosting receive **no manuscripts**. There is no Quill account or analytics. Local models process writing on the device and fetch weights/update metadata from Hugging Face; browsers also fetch the pinned WebLLM runtime. Manuscript text is not sent to these download services. Optional user-configured model APIs receive relevant story text. Apple Image Playground receives the portrait description through Apple’s system interface.
+Model updates install separately and become active only after loading successfully. A failed or cancelled update preserves the working version. New model architectures require app support. Built with Llama; models retain their respective [Llama](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct/blob/main/LICENSE.txt), [Gemma](https://ai.google.dev/gemma/terms), [Qwen](https://huggingface.co/Qwen/Qwen3-0.6B/blob/main/LICENSE), and [SmolLM2](https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B-Instruct/blob/main/LICENSE) terms.
 
-1. Open **Backup & sync → Connect folder** in the iPhone app and select a folder in **iCloud Drive**, not On My iPhone.
-2. On a Mac or PC with that folder locally synced, open the web app in desktop **Chrome or Edge**, choose **Connect folder**, and select the same folder.
-3. Connect other iPhones/iPads to the same folder. Use **Sync now** after opening another device, and let its cloud provider download files.
+## Install on iPhone or iPad
 
-Quill creates a `Quill-revisions` subfolder with immutable JSON files. Different chapter edits merge independently. Concurrent edits to the same document remain as parallel drafts in **Version history**. Restoring a version creates a new revision; older writing stays available. Sync runs once a minute while the app is open and connected. Browser folders must be selected again after reopening. An iPhone folder bookmark is remembered.
+Add the shared **kharrison Apps** source in AltStore Classic:
 
-Safari and mobile browsers do not expose the required live directory access; use **Export backup / Import backup** there. This is folder-based exchange through your provider, not a direct iCloud web API. “Saved to sync folder” confirms a local provider write, not delivery to another device. A disconnected or unavailable provider leaves local writing available.
+```text
+https://raw.githubusercontent.com/kharrisongit/utube/main/source/apps.json
+```
 
-**Keep periodic backups.** Clearing browser data or uninstalling the app removes local drafts. Files are not end-to-end encrypted by Quill; use your provider's normal privacy controls. History is retained rather than pruned. Split extremely large chapters; a revision has a 4 MB limit. Imports above 100 MB are rejected by the interface. If a save fails, keep the app open and copy/export writing before closing it.
+Find **Quill** there, or download `Quill.ipa` from [the latest release](https://github.com/kharrisongit/Quill/releases/latest) and open it in AltStore Classic. Requires iOS 16 or later; AI features have additional device requirements. AltStore signs the app with your account, and installation/refresh restrictions depend on your setup.
 
-## Development
+Quill's [component feed](https://raw.githubusercontent.com/kharrisongit/Quill/main/source/apps.json) is maintained in this repository and imported into the shared source. You only need the shared source to receive updates.
 
-The editor has no npm build dependencies. Native builds use Xcode 26, XcodeGen and pinned Swift packages for MLX/Qwen. `project.yml` generates the Xcode project. The browser lazily imports WebLLM 0.2.85 only when Qwen is requested.
+## Saving, privacy, and sync
+
+Quill saves automatically to native files on iPhone/iPad or IndexedDB in the browser. The app bundles the writing workspace for offline use; the browser caches it after a successful online visit. There is no Quill account or analytics. Public GitHub hosting receives no manuscripts.
+
+Local models process text on your device. Model downloads/update metadata come from Hugging Face; browsers also fetch the pinned WebLLM runtime. Those downloads do not send manuscript text. Optional model APIs receive relevant story text, and Apple's portrait interface receives the character description.
+
+For optional folder sync:
+
+1. In the iPhone app, open **Backup & sync → Connect folder** and choose a folder in iCloud Drive.
+2. On a Mac or PC with that folder locally synced, open Quill in desktop Chrome or Edge and connect the same folder.
+3. Connect other devices to that folder and use **Sync now** after switching devices.
+
+Sync runs while Quill is open. Different document edits merge independently; concurrent edits to the same document remain as parallel drafts in **Version history**. Restoring an older version creates a new revision. Safari and mobile browsers use backup import/export instead of live folder access. Saving to a sync folder confirms the local write; delivery depends on your cloud provider.
+
+Keep periodic backups. Clearing browser data or uninstalling the app removes local writing. Quill does not add end-to-end encryption to sync files. A revision has a 4 MB limit, and the interface rejects imports above 100 MB. If saving fails, keep the app open and copy or export your writing before closing it.
+
+## Development and releases
+
+The app, browser workspace, release workflow, and component feed live in this repository. The editor has no npm build dependencies. Native builds use Xcode 26, XcodeGen, and pinned Swift packages. Native inference uses MLX; browser inference uses WebLLM in a worker.
 
 ```sh
 node --test Tests/*.test.mjs
@@ -91,37 +114,18 @@ python3 scripts/bundle.py
 python3 -m http.server --directory docs 8080
 ```
 
-Edit the source modules in `docs/` (including `ai.js` and `ai-runtime.js`) and `style.css`. The deterministic bundler generates `docs/app.bundle.js`, a classic script compatible with the native local-file webview. Commit the generated bundle with source changes. Increment the service-worker cache name when shipping web assets; close all open Quill tabs and reopen to activate an installed update.
+Edit the source modules and styles in `docs/`, then commit the regenerated `docs/app.bundle.js`. Increment the service-worker cache name when shipping web assets. Close all Quill tabs and reopen to activate an installed browser update. GitHub Pages serves `docs/` from `main`.
 
 On macOS with Xcode selected:
 
 ```sh
-QUILL_VERSION=1.0.0 QUILL_BUILD=1 bash build.sh
+QUILL_VERSION=1.0.9 QUILL_BUILD=19 bash build.sh
+# Optional simulator smoke check, only when explicitly wanted:
 bash smoke.sh
 ```
 
-The device build produces `build/Quill.ipa` for AltStore re-signing. CI validates revision merging and publisher behavior, builds device and simulator binaries, and checks that the bundled web app can save through its native bridge and reload from disk before publishing a release. GitHub Pages serves the `docs` directory from `main`.
+Normal release CI runs the data/publisher tests, phone-sized browser workflows, and the device build, then publishes the IPA and refreshes the AltStore source. **Simulator checks are skipped by default** so device testing can happen sooner. A manually dispatched workflow can enable `run_simulator`; the optional check covers native launch, saved revisions, and draft-file cleanup. Default releases use a screenshot from the browser checks; a requested simulator run replaces it with a simulator screenshot.
 
-## Boundaries of this first release
+`source/app.json` supplies the current listing copy. The publisher refreshes that copy while preserving published assets and older versions. Metadata-only updates can edit the current feeds without rebuilding or changing the installed app version.
 
-No live co-author cursors/comments, editorial marketplace, imported DOCX/EPUB parsing, or professional print typesetting service. Notes are plain text; the chapter editor preserves its supported formatting. PDF uses the platform print sheet. Physical-device AltStore installation, iCloud propagation, and third-party ebook reader rendering require device checks beyond the automated build and simulator gate.
-
-### Illustrated desk and draft storage
-
-Quill starts with **BOOKSHELF** and **SETTINGS**. Books open with an animated cover into **CODEX**, **WRITE!**, and that book's **DRAFTS**. Book details accepts JPEG, PNG and WebP covers, resized to at most 900px and stored as separate image cards so Codex edits do not copy the cover into every book revision. Cover cards are excluded from story notes and AI context. Generated interface artwork and its prompts live in `docs/art/` and ship offline with the app.
-
-Draft management is book-specific. It includes saved chapter outlines, generated chapter attempts and Codex suggestions, including any already in Recently deleted. Storage estimates count the complete saved revision history. Permanent deletion requires confirmation and replaces only the selected draft's history with a compact deletion marker. Chapters, book metadata, character cards, covers and text already applied to the manuscript or Codex are preserved. Existing exported backups remain unchanged; importing them into an updated library does not resurrect a purged draft. Update all synced devices to this release for consistent cleanup behavior.
-
-IndexedDB applies markers and record removal in one transaction. Native files and sync folders write the marker before removing old checkpoints. Interrupted cleanup is completed at the next successful load/save/sync. A deletion marker is intentionally retained (a few hundred bytes) to suppress late offline edits and imports.
-
-`Tests/desk.cjs` covers the new navigation, cover upload/reload, book-scoped draft management, actual IndexedDB removal, stale writes, and manuscript protection. The simulator smoke check also verifies physical native draft-file cleanup. Motion follows the system preference and can be reduced in Settings.
-
-### Beat writing, book sections, and manuscript review
-
-The manuscript editor is the default writing surface. **Generate** opens a beat map; accepting it appends empty beats after existing prose. **Show beats** exposes separate editable regions with directions and one-beat generation/revision actions. **Hide beats** returns to continuous prose. The next-beat prompt remains on the writing page. Selection edits retain exact text offsets and the source chapter revision; changed, deleted, or conflicting manuscripts cannot be replaced by stale suggestions. Existing whole-chapter drafts remain available from Drafts for compatibility.
-
-Chapter records can carry validated `beats` (stable ID, title, prompt, HTML) and `sectionType`. Their flattened HTML remains the authoritative manuscript. Beat boundaries are used only when their text matches it; edits synced from older clients fall back to one editable beat instead of discarding prose or blocking sync. This keeps existing exports and revision history compatible. Restoring older prose without beat metadata clears obsolete boundaries. All front/back matter uses this same storage and ordering, and a custom title page suppresses the automatic export title page.
-
-Codex scans read every nonempty manuscript section in bounded passages, then compare extracted evidence against the Codex. Long evidence is condensed for the selected model; the manuscript is never shortened or changed by a scan. Suggested additions require review. Known characters are matched by normalized name; existing details remain intact, blank fields may be filled, and other updates are appended to notes. Ambiguous duplicate names require deselection or cleanup. Plot-hole findings remain separate from canonical story context. Long scans can take many requests and API provider charges may apply.
-
-`Tests/workshop.cjs` exercises one-beat generation, exact selected-word replacement, retained adjacent writing, saved plans, failed saves, cancellation, concurrent-edit protection, front/back matter exports, reviewed Codex additions, character deduplication, plot-hole status, and icon coverage. `Tests/writing.test.mjs` checks the data invariants and bounded AI workflows.
+The app does not currently provide live co-author cursors/comments, DOCX/EPUB import, or professional print typesetting. Notes are plain text; PDF uses the platform print sheet. Physical-device model performance, AltStore installation, iCloud delivery, and ebook reader rendering need device testing.

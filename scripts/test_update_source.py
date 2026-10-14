@@ -88,6 +88,28 @@ class UpdateSourceTests(unittest.TestCase):
         self.assertEqual(len(data["apps"][0]["versions"]), 1)
         self.assertEqual(len(data["news"]), 1)
 
+    def test_refreshes_listing_copy_and_preserves_release_assets_and_history(self):
+        older = {"version": "1.12.0", "downloadURL": "https://example.com/old.ipa", "size": 99}
+        existing = {
+            "name": "Old name", "bundleIdentifier": "com.kharrison.quill",
+            "subtitle": "Old subtitle", "localizedDescription": "Old features",
+            "iconURL": "https://example.com/published-icon.png", "versions": [older],
+            "screenshots": [{"imageURL": "https://example.com/screen.png"}],
+            "appPermissions": {"entitlements": ["application-identifier"], "privacy": {}},
+        }
+        self.feed.write_text(json.dumps({"apps": [existing], "news": []}))
+        template = json.loads(self.template.read_text())
+        template.update(subtitle="Your story, one beat at a time", localizedDescription="Current features")
+        self.template.write_text(json.dumps(template))
+        result = self.publish()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        app = json.loads(self.feed.read_text())["apps"][0]
+        for field in ("name", "developerName", "subtitle", "localizedDescription"):
+            self.assertEqual(app[field], template[field])
+        for field in ("iconURL", "screenshots", "appPermissions"):
+            self.assertEqual(app[field], existing[field])
+        self.assertEqual(app["versions"][1:], [older])
+
     def legacy_source(self):
         legacy = {"name": "Quill", "bundleIdentifier": "com.verback.YTLite",
                   "versions": [{"version": "1.12.0", "downloadURL": "https://example.com/old.ipa"}]}

@@ -1,6 +1,11 @@
 name: Build Quill IPA
 on:
   workflow_dispatch:
+    inputs:
+      run_simulator:
+        description: 'Run the optional simulator smoke check (device testing is the default)'
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths:
@@ -64,7 +69,10 @@ jobs:
           QUILL_VERSION: ${{ steps.release.outputs.version }}
           QUILL_BUILD: ${{ github.run_number }}
         run: bash build.sh
+      - name: Prepare release screenshot from the browser checks
+        run: cp /tmp/quill-start-test.png build/quill-screenshot.png
       - name: Launch app in simulator
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_simulator }}
         env:
           QUILL_VERSION: ${{ steps.release.outputs.version }}
           QUILL_BUILD: ${{ github.run_number }}
