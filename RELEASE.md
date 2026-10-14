@@ -1,12 +1,10 @@
-Free chapter writing and full-book plot beats.
+Shape your chapter before Quill writes it.
 
-- Write one chapter at a time from a prompt and approximate word target.
-- Keep the full plot and writing preferences in the new Plot beats page.
-- Switch between Apple Intelligence and Qwen inside the iPhone/iPad app.
-- Use Qwen in supported WebGPU browsers on computers and Android.
-- Choose balanced Qwen 1.7B or the lighter 0.6B model. First use downloads model files; there are no AI usage charges.
-- Check for Qwen model updates and download them without replacing a working copy until the new model loads.
-- Review generated drafts before using them. Partial drafts are kept when stopped, and older manuscript versions remain recoverable.
-- Tap outside sidebars and dialogs to dismiss them. The chapter writer stays open while generating, with an explicit Stop & keep draft button.
+- A full-screen chapter writer replaces the pop-up panel.
+- Generate an outline first, edit its events and ending, then choose Approve outline & write chapter. You can also write your own outline.
+- Outline edits autosave and remain available after reopening Quill. Every prose request receives the approved outline unchanged.
+- Fix the misleading story-context error on short prompts with empty plot beats by removing the hidden outline summarization loop. Long story-note errors now identify the relevant section.
+- Keep the writer open during outline creation, chapter writing and model downloads. Stop & keep draft preserves partial output.
+- Saved outlines and generated drafts remain separate from the manuscript, with previous versions preserved.
 
-Apple Intelligence needs a supported device with iOS 26+ and Apple Intelligence enabled. Qwen needs sufficient memory (and WebGPU in browsers). Chapter length is approximate. Real-device generation speed and prose quality vary by model and hardware.
+Includes Apple Intelligence and Qwen switching, full-book plot beats, and Qwen model update checks. This release keeps the existing model choices.

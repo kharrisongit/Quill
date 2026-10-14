@@ -6,7 +6,7 @@ export function validate(r) {
   const b = r.body;
   if (!b || !['book','chapter','card'].includes(b.type) || typeof b.title !== 'string' || b.title.length > 1000 || typeof b.deleted !== 'boolean') throw Error('Invalid document.');
   if (b.type !== 'book' && !idOK(b.book)) throw Error('Invalid book reference.');
-  for (const field of ['html','synopsis','author','category','status','color','plotBeats','writingStyle','prompt','issue','model']) if (b[field] !== undefined && (typeof b[field] !== 'string' || b[field].length > 3000000)) throw Error('Invalid document text.');
+  for (const field of ['html','synopsis','author','category','status','color','plotBeats','writingStyle','prompt','outline','issue','model']) if (b[field] !== undefined && (typeof b[field] !== 'string' || b[field].length > 3000000)) throw Error('Invalid document text.');
   for (const field of ['order','goal','dailyGoal','targetWords']) if (b[field] !== undefined && (!Number.isFinite(b[field]) || b[field] < 0)) throw Error('Invalid document number.');
   if (b.type === 'card' && b.category === 'Generated draft' && (!idOK(b.chapter) || !idOK(b.sourceRevision))) throw Error('Invalid generated draft reference.');
   if (JSON.stringify(r).length > 4000000) throw Error('A chapter exceeds the 4 MB limit. Split it into smaller chapters.');

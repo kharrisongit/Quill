@@ -21,7 +21,7 @@ A small sample novel is included so the workspace can be explored immediately. C
 
 ## Free chapter writing
 
-Open a book’s **Plot beats** page to save its complete plot and optional writing preferences. These autosave with the book and are included in backup, sync and version history. In a chapter, choose **Write chapter**, select a model, enter the events for that chapter and choose an approximate length (500–3,000 words).
+Open a book’s **Plot beats** page to save its complete plot and optional writing preferences. These autosave with the book and are included in backup, sync and version history. In a chapter, choose **Write chapter**, select a model, enter the events for that chapter and choose an approximate length (500–3,000 words). The writer opens as a full-screen workspace. Choose **Generate outline**, edit the proposed beats and ending, then choose **Approve outline & write chapter**. No chapter prose is generated before that explicit approval; you can also type your own outline.
 
 - **Apple Intelligence**: iPhone/iPad with iOS 26+, a supported device, and Apple Intelligence enabled and ready. No separate Quill model download.
 - **Qwen 3 1.7B / 0.6B**: selectable in the native app and supported WebGPU browsers. Native inference uses MLX; browsers use WebLLM in a worker. First use downloads approximately 1 GB / 400 MB on iPhone, or 1.2 GB / 0.5 GB in the browser. Runtime GPU memory requirements are larger than the downloads. Older or low-memory devices may only handle the smaller model.
@@ -30,11 +30,13 @@ Both options have no AI API or per-chapter fees. Qwen downloads require internet
 
 The writer reads the full plot, story notes, earlier chapter synopses and the preceding chapter’s ending. Long planning material is condensed, with all chunks read, before the chapter is generated in connected parts. The full original plot is never replaced by the model’s summary. A word target is approximate, and small local models can still make continuity and prose mistakes.
 
-Generated drafts are saved separately from manuscript chapters, including partial results after stopping or an error. **Use draft & edit** creates a manuscript revision only after review. If the chapter changed while the draft was being written, Quill adds a separate chapter instead of replacing it. Older generated drafts remain selectable in the writing panel.
+Outlines autosave as you edit and survive reopening. Keep an approved outline within the visible 2,400-character limit so it can be sent unchanged with each prose request. Overlong generated outlines are shown in full for you to shorten; Quill never silently summarizes an approved outline. Editing the inputs of a finished draft creates a separate attempt.
+
+Outlines and generated drafts are saved separately from manuscript chapters, including partial results after stopping or an error. **Use draft & edit** creates a manuscript revision only after review. If the chapter changed while the draft was being written, Quill adds a separate chapter instead of replacing it. Older generated drafts remain selectable in the writing panel.
 
 **Check Qwen updates** checks the selected model’s repository revision. **Download update** installs a separate pinned revision and advances the active version only after it loads successfully; a failed or cancelled update preserves the installed pointer. New Qwen architectures/model families require an app integration update. Models are not included in manuscript exports or backups.
 
-Tapping outside a sidebar or dialog dismisses it. The generation/download panel remains open while busy; **Stop & keep draft** ends the operation deliberately. Ordinary dialog close buttons and Escape follow the same rule.
+Tapping outside a sidebar or dialog dismisses it. The full-screen writer remains open during outline/chapter generation or model downloads; **Stop & keep draft** ends the operation deliberately. Ordinary dialog close buttons and Escape follow the same rule.
 
 ## iPhone installation
 
