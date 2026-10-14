@@ -29,7 +29,7 @@ else
   DESTINATION='generic/platform=iOS'
 fi
 mkdir -p build/Web
-cp docs/* build/Web/
+cp -R docs/. build/Web/
 python3 - build "$VERSION" "$BUILD" "$SDK" <<'PY'
 import plistlib,pathlib,sys
 app,version,build,sdk=sys.argv[1:]

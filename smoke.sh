@@ -23,6 +23,15 @@ print(f'Native editor ready: {len(records)} revisions persisted successfully.')
 PY
 xcrun simctl io "$DEVICE" screenshot build/quill-screenshot.png
 xcrun simctl terminate "$DEVICE" com.kharrison.quill
+python3 - "$DATA" <<'PYTEST'
+import json,pathlib,sys
+root=pathlib.Path(sys.argv[1])/'Library/Application Support/QuillRevisions'
+body=dict(type='card',book='sample-book',category='Generated draft',chapter='sample-chapter-1',sourceRevision='sample-chapter-1-initial',title='Discarded draft',deleted=False,html='<p>Remove this saved text.</p>')
+old=dict(schema=1,id='smoke-draft-old',entity='smoke-draft',parents=[],time=1790000000000,body=body)
+marker=dict(schema=1,id='smoke-draft-purge',entity='smoke-draft',parents=[],time=1790000000001,body={k:v for k,v in body.items() if k not in ['html']})
+marker['body'].update(title='Deleted draft',deleted=True,purged=True)
+for r in [old,marker]:(root/(r['id']+'.json')).write_text(json.dumps(r))
+PYTEST
 rm "$DATA/Library/Application Support/quill-ready.txt"
 xcrun simctl launch "$DEVICE" com.kharrison.quill --smoke-test
 for attempt in {1..20}; do
@@ -31,3 +40,11 @@ for attempt in {1..20}; do
 done
 test -f "$DATA/Library/Application Support/quill-ready.txt"
 xcrun simctl terminate "$DEVICE" com.kharrison.quill
+python3 - "$DATA" <<'PYTEST'
+import json,pathlib,sys
+root=pathlib.Path(sys.argv[1])/'Library/Application Support/QuillRevisions'
+assert not (root/'smoke-draft-old.json').exists(), 'Native cleanup retained the deleted draft text'
+assert (root/'smoke-draft-purge.json').exists(), 'Native cleanup lost its sync deletion marker'
+assert (root/'sample-chapter-1-initial.json').exists(), 'Native cleanup touched the manuscript'
+print('Native draft cleanup: old text removed; deletion marker and manuscript preserved.')
+PYTEST

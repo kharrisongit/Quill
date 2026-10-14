@@ -57,6 +57,7 @@ jobs:
           node Tests/ui.cjs
           node Tests/browser-ai.cjs
           node Tests/models.cjs
+          node Tests/desk.cjs
       - name: Build IPA
         env:
           QUILL_VERSION: ${{ steps.release.outputs.version }}

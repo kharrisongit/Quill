@@ -96,9 +96,14 @@ final class WritingDesk: UIViewController, WKScriptMessageHandler, WKNavigationD
     }
     private func writeRecords(_ records:[Any],to dir:URL)throws {
         let checked=try records.map{try record($0)}
+        let existing=try readRecords(dir)
         // Validate collisions before writing any of the batch.
         for(id,data) in checked {let url=dir.appendingPathComponent(id+".json");if files.fileExists(atPath:url.path){let previous=try JSONSerialization.jsonObject(with:Data(contentsOf:url));let (_,canonical)=try record(previous);guard canonical==data else {throw problem("A revision identifier conflicts. Both files have been left unchanged.")}}}
-        for(id,data) in checked {let url=dir.appendingPathComponent(id+".json");if !files.fileExists(atPath:url.path){try data.write(to:url,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}}
+        let merged=try DraftCleanup.compact(existing + records.compactMap{$0 as? [String:Any]})
+        let kept=Set(merged.compactMap{$0["id"] as? String})
+        // Write all retained files, especially the marker, before deleting old copies.
+        for r in merged {let(id,data)=try record(r);let url=dir.appendingPathComponent(id+".json");if !files.fileExists(atPath:url.path){try data.write(to:url,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])}}
+        for r in existing {if let id=r["id"] as? String,!kept.contains(id){try files.removeItem(at:dir.appendingPathComponent(id+".json"))}}
     }
     func userContentController(_ controller:WKUserContentController,didReceive message:WKScriptMessage) {
         guard message.frameInfo.isMainFrame,let url=message.frameInfo.request.url,url.isFileURL,url.standardizedFileURL.path.hasPrefix(webRoot.standardizedFileURL.path+"/"),let data=message.body as? [String:Any],let id=data["id"] as? String,let action=data["action"] as? String else {return}
@@ -124,7 +129,7 @@ final class WritingDesk: UIViewController, WKScriptMessageHandler, WKNavigationD
             },finish:{[weak self] text,error in self?.reply(id,text as Any? ?? NSNull(),error:error)})
         case "load":
             if let initialError {reply(id,error:initialError);return}
-            io.async {do{self.reply(id,try self.readRecords(self.root))}catch{self.reply(id,error:error.localizedDescription)}}
+            io.async {do{try self.writeRecords([],to:self.root);self.reply(id,try self.readRecords(self.root))}catch{self.reply(id,error:error.localizedDescription)}}
         case "save":
             guard let records=p["records"] as? [Any],root != nil else {reply(id,error:"Local storage is unavailable.");return}
             io.async {do{try self.writeRecords(records,to:self.root);self.reply(id,true)}catch{self.reply(id,error:error.localizedDescription)}}

@@ -1,11 +1,11 @@
-Your story’s Codex, and more choice over the models that write with you.
+A new home for your stories.
 
-- Open Codex inside a book for its story summary, plot beats, writing style and characters. Existing plot beats and character notes appear there automatically.
-- Build characters by hand or generate an editable suggestion using your selected writing model. Keep track of appearance, personality, backstory, motivation, relationships and character arcs.
-- Generate a character portrait with Apple Image Playground on supported devices, or upload your own image. Apple’s availability and usage limits apply. Portraits are saved with character revisions and backups.
-- Generate the next plot beat, edit it, and explicitly add it to the plot. Chapter outlines, prose, characters and beat suggestions all reference the Codex.
-- Manage Models shows downloads, installed space, update/download controls, and deletion of model files, older copies and partial downloads. Books and drafts are preserved.
-- Add Llama 3.2 1B/3B and Gemma 3 1B choices on iPhone/iPad alongside Apple Intelligence and Qwen. Compatible browsers also offer Llama and SmolLM2; Gemma is native-only in this release. Device memory requirements still apply.
-- Connect custom model APIs using OpenAI-compatible chat completions or Anthropic Messages. Enter a base URL, model ID and optional key; save, test, edit, select or remove each connection. iPhone keys use Keychain; browser keys last for the current tab session. Other API formats require an adapter.
+- Start at an illustrated writing desk with BOOKSHELF and SETTINGS. Open the bookshelf, tap a book, and watch its cover open into the book’s CODEX and WRITE! menu.
+- Every new book appears on the shelf. Add or change a custom cover in Book details & cover; covers are resized for storage and saved with backups and sync.
+- Find DRAFTS inside each book. Review or export saved outlines, generated chapter attempts and Codex suggestions; search, filter and select multiple drafts for permanent deletion.
+- Draft cleanup removes the selected text and all its saved checkpoints. Text already added to the manuscript or Codex is kept. Tiny deletion records prevent older backups and updated synced devices from restoring discarded drafts. Existing exported backups retain their copies.
+- Model downloads show their percentage beside the model’s name and a progress bar underneath, including downloads started from the chapter writer or character tools.
+- Custom illustrated buttons and headers, paper and ink colors, book-opening transitions, animated highlights, a physical bookshelf, and refreshed light and dark themes. The manuscript remains easy to read.
+- Reduce animations in Settings, or use your device’s Reduce Motion preference. Settings stays universal: writing models, API connections, appearance and backup/sync. Draft management belongs to each book.
 
-Local writing has no usage fees. Optional APIs send relevant story context to your selected server and may incur provider charges. Apple Intelligence downloads are managed in iOS Settings. The chapter writer still requires review and approval of an editable outline before writing prose.
+Includes checks for draft deletion, retained manuscripts and other books, cover persistence, model progress and phone-sized navigation. Native model inference and Image Playground still depend on device support.

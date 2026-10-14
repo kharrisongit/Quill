@@ -105,3 +105,13 @@ The device build produces `build/Quill.ipa` for AltStore re-signing. CI validate
 ## Boundaries of this first release
 
 No live co-author cursors/comments, editorial marketplace, imported DOCX/EPUB parsing, or professional print typesetting service. Notes are plain text; the chapter editor preserves its supported formatting. PDF uses the platform print sheet. Physical-device AltStore installation, iCloud propagation, and third-party ebook reader rendering require device checks beyond the automated build and simulator gate.
+
+### Illustrated desk and draft storage
+
+Quill starts with **BOOKSHELF** and **SETTINGS**. Books open with an animated cover into **CODEX**, **WRITE!**, and that book's **DRAFTS**. Book details accepts JPEG, PNG and WebP covers, resized to at most 900px and stored as separate image cards so Codex edits do not copy the cover into every book revision. Cover cards are excluded from story notes and AI context. Generated interface artwork and its prompts live in `docs/art/` and ship offline with the app.
+
+Draft management is book-specific. It includes saved chapter outlines, generated chapter attempts and Codex suggestions, including any already in Recently deleted. Storage estimates count the complete saved revision history. Permanent deletion requires confirmation and replaces only the selected draft's history with a compact deletion marker. Chapters, book metadata, character cards, covers and text already applied to the manuscript or Codex are preserved. Existing exported backups remain unchanged; importing them into an updated library does not resurrect a purged draft. Update all synced devices to this release for consistent cleanup behavior.
+
+IndexedDB applies markers and record removal in one transaction. Native files and sync folders write the marker before removing old checkpoints. Interrupted cleanup is completed at the next successful load/save/sync. A deletion marker is intentionally retained (a few hundred bytes) to suppress late offline edits and imports.
+
+`Tests/desk.cjs` covers the new navigation, cover upload/reload, book-scoped draft management, actual IndexedDB removal, stale writes, and manuscript protection. The simulator smoke check also verifies physical native draft-file cleanup. Motion follows the system preference and can be reduced in Settings.

@@ -11,8 +11,18 @@ export async function openStorage(){
   db=await new Promise((resolve,reject)=>{const r=indexedDB.open('quill-writer',1);r.onupgradeneeded=()=>r.result.createObjectStore('revisions',{keyPath:'id'});r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});
   navigator.storage?.persist?.().catch(()=>{});
 }
-export async function load(){if(native)return union([],await bridge('load'));return new Promise((resolve,reject)=>{const t=db.transaction('revisions'),r=t.objectStore('revisions').getAll();r.onsuccess=()=>{try{resolve(union([],r.result));}catch(e){reject(e);}};r.onerror=()=>reject(r.error);});}
-export async function put(records){records.forEach(validate);if(native){await bridge('save',{records});return;}await new Promise((resolve,reject)=>{const t=db.transaction('revisions','readwrite');for(const r of records)t.objectStore('revisions').put(r);t.oncomplete=resolve;t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error||Error('Save cancelled.'));});}
+function updateRecords(records){return new Promise((resolve,reject)=>{
+  const t=db.transaction('revisions','readwrite'),store=t.objectStore('revisions'),request=store.getAll();let merged,error;
+  request.onsuccess=()=>{try{
+    merged=union(request.result,records);const kept=new Set(merged.map(r=>r.id)),known=new Set(request.result.map(r=>r.id));
+    // Marker and physical cleanup commit together; stale tabs cannot reinsert deleted drafts.
+    for(const r of request.result)if(!kept.has(r.id))store.delete(r.id);
+    for(const r of merged)if(!known.has(r.id))store.put(r);
+  }catch(e){error=e;t.abort();}};
+  t.oncomplete=()=>resolve(merged);t.onerror=()=>reject(error||t.error);t.onabort=()=>reject(error||t.error||Error('Save cancelled.'));
+});}
+export async function load(){if(native)return union([],await bridge('load'));return updateRecords([]);}
+export async function put(records){records.forEach(validate);if(native){await bridge('save',{records});return;}await updateRecords(records);}
 let folder=null;
 export async function connectFolder(){
   if(native)return bridge('connect');
@@ -27,7 +37,10 @@ export async function sync(revisions){
   for await(const [name,handle] of dir.entries())if(handle.kind==='file'&&/^[\w-]+\.json$/.test(name)){const f=await handle.getFile();if(f.size>5000000)throw Error('An oversized sync file needs attention.');const r=validate(JSON.parse(await f.text()));if(name!==r.id+'.json')throw Error('Invalid sync filename.');incoming.push(r);existing.add(r.id);}
   const merged=union(revisions,incoming);
   // Check the entire incoming set before writing either side.
-  for(const r of revisions)if(!existing.has(r.id)){const h=await dir.getFileHandle(r.id+'.json',{create:true}),w=await h.createWritable();await w.write(JSON.stringify(r));await w.close();}
+  for(const r of merged)if(!existing.has(r.id)){const h=await dir.getFileHandle(r.id+'.json',{create:true}),w=await h.createWritable();await w.write(JSON.stringify(r));await w.close();}
+  // Publish the deletion marker successfully before removing any synced checkpoints.
+  const kept=new Set(merged.map(r=>r.id));
+  for(const r of incoming)if(!kept.has(r.id))await dir.removeEntry(r.id+'.json');
   await put(merged.filter(r=>!revisions.some(x=>x.id===r.id)));return merged;
 }
 export async function download(name,type,content){

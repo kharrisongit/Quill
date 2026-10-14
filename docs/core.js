@@ -1,9 +1,12 @@
 // Immutable revisions: concurrent edits remain available until explicitly resolved.
 export const uuid = () => crypto.randomUUID();
 const idOK = s => typeof s === 'string' && /^[a-zA-Z0-9-]{1,80}$/.test(s);
+export const isManagedDraft = b => b?.type === 'card' && ['Generated draft','Codex suggestion'].includes(b.category);
+const purgeFields = ['type','book','title','deleted','category','purged','chapter','sourceRevision'];
 export function validate(r) {
   if (!r || r.schema !== 1 || !idOK(r.id) || !idOK(r.entity) || !Array.isArray(r.parents) || r.parents.length > 1000 || r.parents.some(p => !idOK(p) || p === r.id) || !Number.isFinite(r.time)) throw Error('Invalid Quill revision.');
   const b = r.body;
+  if (b?.purged !== undefined && (b.purged !== true || !isManagedDraft(b) || b.deleted !== true || b.title !== 'Deleted draft' || r.parents.length || Object.keys(b).some(k=>!purgeFields.includes(k)))) throw Error('Invalid draft deletion.');
   if (!b || !['book','chapter','card'].includes(b.type) || typeof b.title !== 'string' || b.title.length > 1000 || typeof b.deleted !== 'boolean') throw Error('Invalid document.');
   if (b.type !== 'book' && !idOK(b.book)) throw Error('Invalid book reference.');
   for (const field of ['html','synopsis','author','category','status','color','plotBeats','writingStyle','prompt','outline','issue','model','role','age','appearance','personality','backstory','motivation','arc','relationships']) if (b[field] !== undefined && (typeof b[field] !== 'string' || b[field].length > 3000000)) throw Error('Invalid document text.');
@@ -39,7 +42,18 @@ export function union(existing, incoming) {
       }
     }
   }
-  return [...map.values()];
+  // Permanent deletion wins over late sync, older backups and edits from another tab.
+  // Retain a tiny marker, never the deleted text or its checkpoints.
+  const purged = new Map();
+  for (const r of map.values()) if (r.body.purged) {
+    const previous=purged.get(r.entity);
+    if(!previous || r.id.localeCompare(previous.id)<0)purged.set(r.entity,r);
+  }
+  for (const r of map.values()) {
+    const marker=purged.get(r.entity);
+    if(marker && (!isManagedDraft(r.body) || r.body.book!==marker.body.book || r.body.category!==marker.body.category))throw Error('Draft deletion does not match its document.');
+  }
+  return [...map.values()].filter(r=>!purged.has(r.entity)||purged.get(r.entity).id===r.id);
 }
 export function heads(revisions, entity) {
   const items = revisions.filter(r => r.entity === entity);
@@ -49,7 +63,19 @@ export function heads(revisions, entity) {
 export function documents(revisions, deleted=false) {
   const grouped = new Map();
   for (const r of revisions) { if (!grouped.has(r.entity)) grouped.set(r.entity,[]); grouped.get(r.entity).push(r); }
-  return [...grouped].map(([id,list]) => { const h=heads(list,id); return {...h[0].body,id,revision:h[0],conflicts:h.length-1}; }).filter(d=>d.deleted===deleted);
+  return [...grouped].map(([id,list]) => { const h=heads(list,id); return {...h[0].body,id,revision:h[0],conflicts:h.length-1}; }).filter(d=>!d.purged&&d.deleted===deleted);
+}
+export function purgeDraft(revisions, entity) {
+  const d=documents(revisions).concat(documents(revisions,true)).find(d=>d.id===entity);
+  if(!isManagedDraft(d))throw Error('Only saved AI drafts and suggestions can be permanently deleted here.');
+  const body={type:'card',book:d.book,category:d.category,title:'Deleted draft',deleted:true,purged:true};
+  if(d.category==='Generated draft')Object.assign(body,{chapter:d.chapter,sourceRevision:d.sourceRevision});
+  return validate(revise(entity,body));
+}
+export function draftStorage(revisions, book=null) {
+  const sizes=new Map();
+  for(const r of revisions)if(isManagedDraft(r.body)&&!r.body.purged)sizes.set(r.entity,(sizes.get(r.entity)||0)+new TextEncoder().encode(JSON.stringify(r)).length);
+  return documents(revisions).concat(documents(revisions,true)).filter(d=>isManagedDraft(d)&&(!book||d.book===book)).map(d=>({...d,bytes:sizes.get(d.id)||0})).sort((a,b)=>b.revision.time-a.revision.time||b.id.localeCompare(a.id));
 }
 export function revise(entity, body, parents=[]) { return {schema:1,id:uuid(),entity,parents:[...new Set(parents)],time:Date.now(),body:structuredClone(body)}; }
 export function countWords(text) { return (String(text).match(/[\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*/gu)||[]).length; }
