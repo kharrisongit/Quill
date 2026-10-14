@@ -1336,7 +1336,8 @@ function captureSelection(){
   if(!textRoot?.contains(r.startContainer)||!textRoot.contains(r.endContainer)||!r.toString().trim()){hideSelectionAction();return;}
   const prefix=document.createRange();prefix.selectNodeContents(textRoot);prefix.setEnd(r.startContainer,r.startOffset);
   selectedPassage={chapter:entryId,beatId:block.dataset.beatId,start:prefix.toString().length,end:prefix.toString().length+r.toString().length,text:r.toString(),html:sanitize(textRoot.innerHTML)};
-  const rect=[...r.getClientRects()].find(r=>r.width&&r.height)||r.getBoundingClientRect(),viewport=window.visualViewport,top=(viewport?.offsetTop||0),bottom=top+(viewport?.height||innerHeight),left=viewport?.offsetLeft||0,width=viewport?.width||innerWidth,header=$('.topbar')?.getBoundingClientRect().bottom||top;
+  const viewport=window.visualViewport,top=(viewport?.offsetTop||0),bottom=top+(viewport?.height||innerHeight),left=viewport?.offsetLeft||0,width=viewport?.width||innerWidth,header=$('.topbar')?.getBoundingClientRect().bottom||top;
+  const rect=[...r.getClientRects()].find(r=>r.width&&r.height&&r.bottom>Math.max(top,header)&&r.top<bottom)||r.getBoundingClientRect();
   if(rect.bottom<Math.max(top,header)||rect.top>bottom){button.hidden=true;return;}
   button.disabled=false;button.hidden=false;
   const box=button.getBoundingClientRect(),x=Math.min(left+width-box.width-8,Math.max(left+8,rect.left+rect.width/2-box.width/2));
