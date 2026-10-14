@@ -94,7 +94,9 @@ export async function createWriter(model,{signal,onStatus}){
           messages:[{role:'system',content:instructions},{role:'user',content:prompt}],stream:true,
           max_tokens:maxTokens,temperature:0.75,top_p:0.8,frequency_penalty:0.15,extra_body:{enable_thinking:false}
         }),signal);
-        let text='';for await(const chunk of stream){if(signal.aborted)throw aborted();text+=chunk.choices[0]?.delta?.content||'';onProgress?.(text);}
+        // Terminating the worker can leave a pending iterator read unresolved; race each read with Stop.
+        const iterator=stream[Symbol.asyncIterator]();let text='';
+        while(true){const {value:chunk,done}=await withAbort(iterator.next(),signal);if(done)break;if(signal.aborted)throw aborted();text+=chunk.choices[0]?.delta?.content||'';onProgress?.(text);}
         if(signal.aborted)throw aborted();return text;
       },close:()=>signal.removeEventListener('abort',cancel)
     };

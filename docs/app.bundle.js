@@ -331,7 +331,9 @@ async function createWriter(model,{signal,onStatus}){
           messages:[{role:'system',content:instructions},{role:'user',content:prompt}],stream:true,
           max_tokens:maxTokens,temperature:0.75,top_p:0.8,frequency_penalty:0.15,extra_body:{enable_thinking:false}
         }),signal);
-        let text='';for await(const chunk of stream){if(signal.aborted)throw aborted();text+=chunk.choices[0]?.delta?.content||'';onProgress?.(text);}
+        // Terminating the worker can leave a pending iterator read unresolved; race each read with Stop.
+        const iterator=stream[Symbol.asyncIterator]();let text='';
+        while(true){const {value:chunk,done}=await withAbort(iterator.next(),signal);if(done)break;if(signal.aborted)throw aborted();text+=chunk.choices[0]?.delta?.content||'';onProgress?.(text);}
         if(signal.aborted)throw aborted();return text;
       },close:()=>signal.removeEventListener('abort',cancel)
     };
@@ -446,11 +448,15 @@ function checkpointAI(job){
   }).catch(e=>{job.saveError=e;job.controller.abort();throw e;});return job.saves;
 }
 async function startAI(){
-  if(aiJob)return;await flush();
-  const c=find(entryId),b=book(),prompt=$('#ai-prompt').value.trim(),model=$('#ai-model').value,targetWords=Number($('#ai-length').value);
+  if(aiJob)return;
+  const prompt=$('#ai-prompt').value.trim(),model=$('#ai-model').value,targetWords=Number($('#ai-length').value);
   if(!prompt)throw Error('Describe what should happen in this chapter.');
-  const controller=new AbortController();
-  const id=await create({type:'card',category:'Generated draft',book:b.id,chapter:c.id,sourceRevision:c.revision.id,title:c.title,prompt,targetWords,model,html:'',status:'Preparing',issue:''});
+  const controller=new AbortController();aiJob={controller,kind:'preparing'};setAIBusy(true);
+  let c,b,id;
+  try{
+    await flush();c=find(entryId);b=book();
+    id=await create({type:'card',category:'Generated draft',book:b.id,chapter:c.id,sourceRevision:c.revision.id,title:c.title,prompt,targetWords,model,html:'',status:'Preparing',issue:''});
+  }catch(e){aiJob=null;setAIBusy(false);await checkAIModel();throw e;}
   const g=find(id);const job={id,base:g.revision.id,body:bodyOf(g),text:'',controller,saves:Promise.resolve(),lastSave:0};aiJob=job;aiReviewId=id;setAIBusy(true);
   $('#ai-review').hidden=false;$('#ai-draft-text').value='';$('#ai-issue').textContent='Your original chapter stays unchanged until you choose Use draft & edit.';
   aiStatus('Preparing the chapter writer…');let writer;
