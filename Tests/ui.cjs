@@ -5,7 +5,7 @@ const assert=require('node:assert/strict');
   const browser=await chromium.launch({headless:true,...(process.env.QUILL_CHROME?{executablePath:process.env.QUILL_CHROME}:{})});
   try{
     const page=await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'});
-    const openBook=async()=>{if(await page.locator('[data-action="bookshelf"]').isVisible())await page.locator('[data-action="bookshelf"]').click();await page.locator('[data-action="open-book"]').first().click();await page.locator('[data-action="enter-write"]').click();};const errors=[];page.on('pageerror',e=>errors.push(e.message));
+    const openBook=async()=>{await page.locator('[data-action="bookshelf"]').waitFor();await page.locator('[data-action="bookshelf"]').click();await page.locator('[data-action="open-book"]').first().click();await page.locator('[data-action="enter-write"]').click();};const errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.addInitScript(()=>{
       // Exercise the real UI/storage bridge with deterministic inference, not model-quality assertions.
       window.quillTestRequests=[];
