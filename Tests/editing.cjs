@@ -2,8 +2,9 @@ const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 (async()=>{
  const browser=await chromium.launch({headless:true,...(process.env.QUILL_CHROME?{executablePath:process.env.QUILL_CHROME}:{})});
+ let page;
  try{
-  const page=await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+  page=await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
   const click=async selector=>{await page.locator(selector).first().click();await page.locator('.scene-curtain').waitFor({state:'detached'});};
   const close=async()=>{await click('#modal [data-action="close"]');await page.waitForFunction(()=>!document.querySelector('#modal').open);};
   await page.goto(process.env.QUILL_TEST_URL||'http://127.0.0.1:8088',{waitUntil:'domcontentloaded'});await page.locator('.start-screen').waitFor();
@@ -29,7 +30,7 @@ const assert=require('node:assert/strict');
   // Last edited section and scroll position survive the book menu and a reload.
   await click('[data-action="sidebar"]');await click('[data-action="open-chapter"][data-id="sample-chapter-2"]');
   await page.locator('#editor').fill(Array.from({length:90},(_,i)=>`Paragraph ${i}. Mara follows the shoreline.\n`).join(''));await page.evaluate(()=>window.quillFlush());
-  await page.evaluate(()=>document.querySelector('#main-content').scrollTop=650);await click('[data-action="book-door"]');await click('[data-action="enter-write"]');assert.equal(await page.locator('#chapter-title').inputValue(),'The room without a door');assert((await page.locator('#main-content').evaluate(e=>e.scrollTop))>=640);
+  await page.evaluate(()=>{document.querySelector('#editor').blur();document.querySelector('#main-content').scrollTop=650;});await click('[data-action="book-door"]');await click('[data-action="enter-write"]');assert.equal(await page.locator('#chapter-title').inputValue(),'The room without a door');await page.waitForFunction(()=>document.querySelector('#main-content').scrollTop>=640);
   // Selection action floats with the highlighted text and hides when selection ends.
   // Select a visible paragraph after scrolling, independent of text layout and viewport wrapping.
   await page.evaluate(()=>{document.querySelector('#main-content').scrollTop=0;const root=document.querySelector('#editor [data-beat-id]'),node=document.createTreeWalker(root,NodeFilter.SHOW_TEXT).nextNode(),r=document.createRange();r.setStart(node,0);r.setEnd(node,9);getSelection().removeAllRanges();getSelection().addRange(r);});
@@ -39,5 +40,5 @@ const assert=require('node:assert/strict');
   // A changed section must not accept a stale replacement.
   await click('.writing-tools [data-action="search"]');await page.locator('#search-input').fill('Mara');await page.locator('#replace-input').fill('Neri');await page.evaluate(async()=>{const s=await import('./storage.js'),core=await import('./core.js');await s.openStorage();const c=core.documents(await s.load()).find(c=>c.id==='sample-chapter-2');await s.put([core.revise(c.id,{...c.revision.body,synopsis:'Changed elsewhere'},[c.revision.id])]);});await click('[data-action="replace-all"]');await page.waitForFunction(()=>document.querySelector('#toast').textContent.includes('manuscript changed'));assert(!await page.locator('#editor').innerText().then(t=>t.includes('Neri')));await close();
   assert.deepEqual(errors,[]);await page.screenshot({path:'/tmp/quill-editing-test.png'});console.log('Editing, spelling, page breaks, selection popover, navigation and desk layout passed');
- }finally{await browser.close();}
+ }catch(e){if(page){console.log(await page.evaluate(()=>({toast:document.querySelector('#toast')?.textContent,modal:document.querySelector('#modal')?.textContent,scroll:document.querySelector('#main-content')?.scrollTop})));await page.screenshot({path:'/tmp/quill-editing-failure-test.png'});}throw e;}finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1)});

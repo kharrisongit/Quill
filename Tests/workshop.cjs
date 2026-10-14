@@ -14,7 +14,7 @@ const assert=require('node:assert/strict');
     if(action==='save'){if(window.failSave)return reply(null,'Storage unavailable');for(const r of payload.records)if(!records.some(x=>x.id===r.id))records.push(r);localStorage.setItem('workshop-records',JSON.stringify(records));return reply(true);}
     if(action==='ready')return reply({connected:false});
     if(action==='aiStatus')return reply({available:true,message:'Test model ready'});
-    if(action==='aiCancel'){window.cancelled=true;return reply(true);}
+    if(action==='aiCancel'){window.cancelled=true;window.finishGeneration?.();window.finishGeneration=null;return reply(true);}
     if(action==='aiGenerate'){
      if(payload.maxTokens>1200)return reply(null,'Native request limit exceeded');
      window.requests.push(payload);window.cancelled=false;let text;
@@ -27,6 +27,7 @@ const assert=require('node:assert/strict');
      else if(payload.instructions.startsWith('Update a novelist'))text=JSON.stringify({summaryAdditions:'Neri joins the journey.',developments:'The blue map begins to glow.',notes:'The lighthouse is locked.',characters:[{name:'Mara Ellery',role:'Restorer',evidence:'Opening chapter'},{name:'Neri',role:'Guide',appearance:'Silver eyes',evidence:'A map of somewhere else'}]});
      else text='A suggestion.';
      setTimeout(()=>{if(!window.cancelled)window.quillProgress({id,text})},30);
+     if(window.holdGeneration){window.finishGeneration=()=>reply(null,'Stopped');return;}
      return setTimeout(()=>reply(window.cancelled?null:text,window.cancelled?'Stopped':undefined),300);
     }
     reply(true);
@@ -62,7 +63,7 @@ const assert=require('node:assert/strict');
   await page.evaluate(async()=>{const {documents,revise}=await import('./core.js');const records=JSON.parse(localStorage.getItem('workshop-records'));const c=documents(records).find(d=>d.id==='sample-chapter-1');records.push(revise(c.id,{...c.revision.body,synopsis:'Changed on another device'},[c.revision.id]));localStorage.setItem('workshop-records',JSON.stringify(records));const channel=new BroadcastChannel('quill-library');channel.postMessage('changed');channel.close();});
   await page.waitForTimeout(80);await page.locator('[data-action="work-apply"]').click();await page.waitForFunction(()=>document.querySelector('#toast').textContent.includes('manuscript changed'));assert(await page.locator('#inline-generation').isVisible());await page.screenshot({path:'/tmp/quill-inline-beat-test.png'});await close();
   // Stop retains the streamed beat; no subsequent beat request starts.
-  await page.locator('#next-writing-prompt').fill('A bell sounds.');await page.locator('[data-action="generate-inline"]').click();assert(!await page.locator('#modal').evaluate(e=>e.open));await page.waitForFunction(()=>document.querySelector('#work-result').value.includes('unfolded'));await page.locator('#work-stop').click();await page.waitForFunction(()=>document.querySelector('#work-status').textContent.startsWith('Stopped.'));assert.match(await page.locator('#work-result').inputValue(),/unfolded/);await close();
+  await page.evaluate(()=>window.holdGeneration=true);await page.locator('#next-writing-prompt').fill('A bell sounds.');await page.locator('[data-action="generate-inline"]').click();assert(!await page.locator('#modal').evaluate(e=>e.open));await page.waitForFunction(()=>document.querySelector('#work-result').value.includes('unfolded'));await page.locator('#work-stop').click();await page.waitForFunction(()=>document.querySelector('#work-status').textContent.startsWith('Stopped.'));assert.match(await page.locator('#work-result').inputValue(),/unfolded/);await page.evaluate(()=>window.holdGeneration=false);await close();
   // Add front/back matter; exports include it without a duplicate automatic title page.
   for(const type of ['dedication','prologue','epilogue','title-page']){await page.locator('[data-action="sidebar"]').click();await page.locator('[data-action="add-section"]').click();await page.locator('#section-type').selectOption(type);await page.locator('#section-form [type="submit"]').click();await page.waitForFunction(()=>!document.querySelector('#modal').open);if(type==='dedication'){await page.locator('#editor').fill('For the patient reader.');await page.evaluate(()=>window.quillFlush());}}
   const exported=await page.evaluate(async()=>{const {documents}=await import('./core.js'),{manuscriptHTML,epub,docx}=await import('./export.js');const ds=documents(JSON.parse(localStorage.getItem('workshop-records'))),b=ds.find(d=>d.id==='sample-book'),cs=ds.filter(d=>d.type==='chapter').sort((a,b)=>a.order-b.order);return {order:cs.map(c=>c.sectionType||'chapter'),html:manuscriptHTML(b,cs),epub:new TextDecoder().decode(epub(b,cs)),docx:new TextDecoder().decode(docx(b,cs))};});
