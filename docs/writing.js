@@ -26,7 +26,7 @@ export function sectionTemplate(type,book,sections){
   return '';
 }
 export function manuscriptBeats(chapter){
-  if(chapter.beats?.length)return structuredClone(chapter.beats);
+  if(chapter.beats?.length&&joinBeats(chapter.beats)===(chapter.html||''))return structuredClone(chapter.beats);
   return [{id:chapter.id+'-body',title:'Opening beat',prompt:'',html:chapter.html||''}];
 }
 export const joinBeats=beats=>beats.map(b=>b.html||'').join('');

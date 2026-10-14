@@ -14,7 +14,8 @@ export function validate(r) {
   if(b.beats!==undefined){
     if(b.type!=='chapter'||!Array.isArray(b.beats)||b.beats.length>500)throw Error('Invalid manuscript beats.');
     const ids=new Set();for(const beat of b.beats){if(!beat||!idOK(beat.id)||ids.has(beat.id)||Object.keys(beat).some(k=>!['id','title','prompt','html'].includes(k))||['title','prompt','html'].some(k=>typeof beat[k]!=='string')||beat.title.length>1000||beat.prompt.length>6000||beat.html.length>3000000)throw Error('Invalid manuscript beat.');ids.add(beat.id);}
-    if(b.beats.map(beat=>beat.html).join('')!==(b.html||''))throw Error('Beat text must match its manuscript.');
+    // Older clients edit flat HTML while preserving unknown fields. The editor uses
+    // boundaries only when their text still matches; authoritative prose is never discarded.
   }
   for(const key of ['operation','beatId','selectedText','analysisKind','reviewSources','evidence','question','suggestion'])if(b[key]!==undefined&&(typeof b[key]!=='string'||b[key].length>300000))throw Error('Invalid writing task.');
   for(const key of ['selectionStart','selectionEnd'])if(b[key]!==undefined&&(!Number.isSafeInteger(b[key])||b[key]<0))throw Error('Invalid selection.');
