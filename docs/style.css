@@ -151,3 +151,18 @@ html.desk-open,html.desk-open body,html.desk-open #app{background:var(--bg)}
 .editor,.editor .beat-text{font-size:var(--writer-font-size,19px);line-height:1.85}.writer-size-preview{font:var(--writer-font-size,19px)/1.8 Georgia,serif;padding:20px 0}#writer-size{accent-color:var(--purple);padding:0;min-height:44px}
 #work-result{min-height:420px;min-height:55dvh;font-family:Georgia,serif;font-size:var(--writer-font-size,19px);line-height:1.8;resize:vertical}#codex-suggestion{min-height:250px}.inline-next{width:100%}.editor .beat-text{min-height:260px}.selection-choice{width:100%;justify-content:flex-start;text-align:left;margin:8px 0;padding:16px;line-height:1.6;white-space:normal}.selection-choice span{flex:1}.selection-choice .icon{flex:none}
 @media(max-width:480px){#find-panel{padding:8px 10px}.find-heading strong{font-size:13px}.find-fields{gap:7px}.find-navigation .btn{padding:8px}.writing-tools{gap:3px}.writing-tools .btn{font-size:11px;padding:8px}.selection-popover .btn{min-height:44px}}
+/* Bound the scrollport itself: padding alone scrolls away beneath the status bar. */
+dialog:not(.ai-modal){
+ --dialog-height:85dvh;
+ --dialog-available-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 20px);
+ position:fixed;
+ inset:calc(10px + env(safe-area-inset-top,0px)) calc(10px + env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) calc(10px + env(safe-area-inset-left,0px));
+ margin:auto;
+ max-width:min(calc(100vw - 32px),calc(100vw - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px) - 20px));
+ max-height:min(var(--dialog-height),var(--dialog-available-height));
+ overflow:auto;
+ overscroll-behavior:contain;
+}
+dialog.manager-modal{--dialog-height:90dvh}
+@media(max-width:760px){dialog.manager-modal{--dialog-height:92dvh}}
+@media(max-width:700px){dialog.work-modal{--dialog-height:calc(100dvh - 18px)}}
