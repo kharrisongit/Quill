@@ -16,6 +16,7 @@ const assert=require('node:assert/strict');
     if(action==='aiStatus')return reply({available:true,message:'Test model ready'});
     if(action==='aiCancel'){window.cancelled=true;return reply(true);}
     if(action==='aiGenerate'){
+     if(payload.maxTokens>1200)return reply(null,'Native request limit exceeded');
      window.requests.push(payload);window.cancelled=false;let text;
      if(payload.instructions.startsWith('Plan a single'))text='1. Discover the blue map.\n2. Trace its coastline.';
      else if(payload.instructions.startsWith('Write exactly one'))text='Mara unfolded the blue map. The ink shimmered.';

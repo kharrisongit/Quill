@@ -21,7 +21,7 @@ permissions:
   contents: write
 concurrency:
   group: quill-release
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: macos-15
@@ -74,6 +74,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.release.outputs.version }}
         run: |
+          REMOTE_HEAD=$(git ls-remote origin refs/heads/main | cut -f1)
+          test "$REMOTE_HEAD" = "$GITHUB_SHA" || { echo "A newer source revision supersedes this release."; exit 1; }
           TAG="quill-$VERSION"
           IPA=build/Quill.ipa
           gh release create "$TAG" "$IPA" build/quill-icon.png build/quill-screenshot.png \
