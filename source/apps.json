@@ -12,7 +12,7 @@
       "developerName": "kharrison",
       "subtitle": "A quiet place for your next novel",
       "localizedDescription": "Write and organize novels on iPhone and iPad. A focused formatted chapter editor, outline, character and place notes, word goals, spell check, saved revisions, and recoverable trash. Export Word documents, EPUB ebooks, formatted HTML, plain text, or print. Local autosave works offline. Connect a folder in iCloud Drive for optional sync while the app is open. Companion browser app: https://kharrisongit.github.io/Quill/. Desktop Chrome and Edge support shared-folder sync; other browsers can import and export backups. iOS 16 or later. Install with AltStore Classic.",
-      "iconURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.5/quill-icon.png",
+      "iconURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.6/quill-icon.png",
       "tintColor": "705B8B",
       "category": "productivity",
       "minOSVersion": "16.0",
@@ -25,6 +25,15 @@
         "privacy": {}
       },
       "versions": [
+        {
+          "version": "1.0.6",
+          "date": "2026-10-14T01:09:45Z",
+          "localizedDescription": "Shape your chapter before Quill writes it.\n\n- A full-screen chapter writer replaces the pop-up panel.\n- Generate an outline first, edit its events and ending, then choose Approve outline & write chapter. You can also write your own outline.\n- Outline edits autosave and remain available after reopening Quill. Every prose request receives the approved outline unchanged.\n- Fix the misleading story-context error on short prompts with empty plot beats by removing the hidden outline summarization loop. Long story-note errors now identify the relevant section.\n- Keep the writer open during outline creation, chapter writing and model downloads. Stop & keep draft preserves partial output.\n- Saved outlines and generated drafts remain separate from the manuscript, with previous versions preserved.\n\nIncludes Apple Intelligence and Qwen switching, full-book plot beats, and Qwen model update checks. This release keeps the existing model choices.",
+          "downloadURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.6/Quill.ipa",
+          "size": 6263513,
+          "minOSVersion": "16.0",
+          "buildVersion": "8"
+        },
         {
           "version": "1.0.5",
           "date": "2026-10-14T00:35:57Z",
@@ -80,14 +89,23 @@
           "buildVersion": "1"
         }
       ],
-      "version": "1.0.5",
-      "versionDate": "2026-10-14T00:35:57Z",
-      "versionDescription": "Free chapter writing and full-book plot beats.\n\n- Write one chapter at a time from a prompt and approximate word target.\n- Keep the full plot and writing preferences in the new Plot beats page.\n- Switch between Apple Intelligence and Qwen inside the iPhone/iPad app.\n- Use Qwen in supported WebGPU browsers on computers and Android.\n- Choose balanced Qwen 1.7B or the lighter 0.6B model. First use downloads model files; there are no AI usage charges.\n- Check for Qwen model updates and download them without replacing a working copy until the new model loads.\n- Review generated drafts before using them. Partial drafts are kept when stopped, and older manuscript versions remain recoverable.\n- Tap outside sidebars and dialogs to dismiss them. The chapter writer stays open while generating, with an explicit Stop & keep draft button.\n\nApple Intelligence needs a supported device with iOS 26+ and Apple Intelligence enabled. Qwen needs sufficient memory (and WebGPU in browsers). Chapter length is approximate. Real-device generation speed and prose quality vary by model and hardware.",
-      "downloadURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.5/Quill.ipa",
-      "size": 6258692
+      "version": "1.0.6",
+      "versionDate": "2026-10-14T01:09:45Z",
+      "versionDescription": "Shape your chapter before Quill writes it.\n\n- A full-screen chapter writer replaces the pop-up panel.\n- Generate an outline first, edit its events and ending, then choose Approve outline & write chapter. You can also write your own outline.\n- Outline edits autosave and remain available after reopening Quill. Every prose request receives the approved outline unchanged.\n- Fix the misleading story-context error on short prompts with empty plot beats by removing the hidden outline summarization loop. Long story-note errors now identify the relevant section.\n- Keep the writer open during outline creation, chapter writing and model downloads. Stop & keep draft preserves partial output.\n- Saved outlines and generated drafts remain separate from the manuscript, with previous versions preserved.\n\nIncludes Apple Intelligence and Qwen switching, full-book plot beats, and Qwen model update checks. This release keeps the existing model choices.",
+      "downloadURL": "https://github.com/kharrisongit/Quill/releases/download/quill-1.0.6/Quill.ipa",
+      "size": 6263513
     }
   ],
   "news": [
+    {
+      "title": "Quill 1.0.6",
+      "identifier": "com.kharrison.quill.release-1.0.6",
+      "caption": "A full-screen chapter writer replaces the pop-up panel.",
+      "date": "2026-10-14T01:09:45Z",
+      "tintColor": "705B8B",
+      "appID": "com.kharrison.quill",
+      "url": "https://github.com/kharrisongit/Quill/releases/tag/quill-1.0.6"
+    },
     {
       "title": "Quill 1.0.5",
       "identifier": "com.kharrison.quill.release-1.0.5",
